@@ -37,4 +37,10 @@
     <HintPath>lib\UnityEngine.CoreModule.dll</HintPath>
   </Reference>
 </ItemGroup>
+
+  <ItemGroup>
+  <Reference Include="UnityEngine.IMGUIModule">
+    <HintPath>lib\UnityEngine.IMGUIModule.dll</HintPath>
+  </Reference>
+</ItemGroup>
 </Project>
