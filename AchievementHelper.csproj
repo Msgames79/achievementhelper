@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net46</TargetFramework>
     <AssemblyName>AchievementHelper</AssemblyName>
-    <Product>AchievementHelper</Product>
+    <Product>Achievement Helper</Product>
     <Version>0.0.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
@@ -12,7 +12,7 @@
       https://nuget.bepinex.dev/v3/index.json;
       https://nuget.samboy.dev/v3/index.json
     </RestoreAdditionalProjectSources>
-    <RootNamespace>Plugin</RootNamespace>
+    <RootNamespace>AchievementHelper</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,6 +29,12 @@
   <ItemGroup>
   <Reference Include="Assembly-CSharp">
     <HintPath>lib\Assembly-CSharp.dll</HintPath>
+  </Reference>
+</ItemGroup>
+
+  <ItemGroup>
+  <Reference Include="UnityEngine.CoreModule">
+    <HintPath>lib\UnityEngine.CoreModule.dll</HintPath>
   </Reference>
 </ItemGroup>
 </Project>

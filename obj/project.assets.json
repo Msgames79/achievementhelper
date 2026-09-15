@@ -838,11 +838,11 @@
   "project": {
     "version": "0.0.0",
     "restore": {
-      "projectUniqueName": "C:\\自分用\\hffmods\\achievementhelper\\MyFirstPlugin.csproj",
+      "projectUniqueName": "c:\\自分用\\hffmods\\achievementhelper\\AchievementHelper.csproj",
       "projectName": "AchievementHelper",
-      "projectPath": "C:\\自分用\\hffmods\\achievementhelper\\MyFirstPlugin.csproj",
+      "projectPath": "c:\\自分用\\hffmods\\achievementhelper\\AchievementHelper.csproj",
       "packagesPath": "C:\\Users\\Msgames79\\.nuget\\packages\\",
-      "outputPath": "C:\\自分用\\hffmods\\achievementhelper\\obj\\",
+      "outputPath": "c:\\自分用\\hffmods\\achievementhelper\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

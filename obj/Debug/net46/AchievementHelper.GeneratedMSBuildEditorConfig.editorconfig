@@ -1,5 +1,5 @@
 is_global = true
-build_property.RootNamespace = Plugin
+build_property.RootNamespace = AchievementHelper
 build_property.ProjectDir = C:\自分用\hffmods\achievementhelper\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 

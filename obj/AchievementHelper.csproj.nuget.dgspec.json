@@ -1,15 +1,15 @@
 {
   "format": 1,
   "restore": {
-    "C:\\自分用\\hffmods\\achievementhelper\\MyFirstPlugin.csproj": {}
+    "C:\\自分用\\hffmods\\achievementhelper\\AchievementHelper.csproj": {}
   },
   "projects": {
-    "C:\\自分用\\hffmods\\achievementhelper\\MyFirstPlugin.csproj": {
+    "C:\\自分用\\hffmods\\achievementhelper\\AchievementHelper.csproj": {
       "version": "0.0.0",
       "restore": {
-        "projectUniqueName": "C:\\自分用\\hffmods\\achievementhelper\\MyFirstPlugin.csproj",
+        "projectUniqueName": "C:\\自分用\\hffmods\\achievementhelper\\AchievementHelper.csproj",
         "projectName": "AchievementHelper",
-        "projectPath": "C:\\自分用\\hffmods\\achievementhelper\\MyFirstPlugin.csproj",
+        "projectPath": "C:\\自分用\\hffmods\\achievementhelper\\AchievementHelper.csproj",
         "packagesPath": "C:\\Users\\Msgames79\\.nuget\\packages\\",
         "outputPath": "C:\\自分用\\hffmods\\achievementhelper\\obj\\",
         "projectStyle": "PackageReference",

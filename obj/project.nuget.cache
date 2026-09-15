@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "Y7TGyypm3RI=",
+  "dgSpecHash": "d8Fsa5pFQtY=",
   "success": true,
-  "projectFilePath": "C:\\自分用\\hffmods\\achievementhelper\\MyFirstPlugin.csproj",
+  "projectFilePath": "C:\\自分用\\hffmods\\achievementhelper\\AchievementHelper.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Msgames79\\.nuget\\packages\\bepinex.analyzers\\1.0.8\\bepinex.analyzers.1.0.8.nupkg.sha512",
     "C:\\Users\\Msgames79\\.nuget\\packages\\bepinex.baselib\\5.4.20\\bepinex.baselib.5.4.20.nupkg.sha512",

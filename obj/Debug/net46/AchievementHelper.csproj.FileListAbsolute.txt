@@ -1,0 +1,13 @@
+C:\自分用\hffmods\achievementhelper\bin\Debug\net46\AchievementHelper.dll
+C:\自分用\hffmods\achievementhelper\bin\Debug\net46\AchievementHelper.pdb
+C:\自分用\hffmods\achievementhelper\obj\Debug\net46\AchievementHelper.csproj.AssemblyReference.cache
+C:\自分用\hffmods\achievementhelper\obj\Debug\net46\MyPluginInfo.cs
+C:\自分用\hffmods\achievementhelper\obj\Debug\net46\AchievementHelper.GeneratedMSBuildEditorConfig.editorconfig
+C:\自分用\hffmods\achievementhelper\obj\Debug\net46\AchievementHelper.AssemblyInfoInputs.cache
+C:\自分用\hffmods\achievementhelper\obj\Debug\net46\AchievementHelper.AssemblyInfo.cs
+C:\自分用\hffmods\achievementhelper\obj\Debug\net46\AchievementHelper.csproj.CoreCompileInputs.cache
+C:\自分用\hffmods\achievementhelper\obj\Debug\net46\AchievementHelper.sourcelink.json
+C:\自分用\hffmods\achievementhelper\obj\Debug\net46\AchievementHelper.dll
+C:\自分用\hffmods\achievementhelper\obj\Debug\net46\AchievementHelper.pdb
+C:\自分用\hffmods\achievementhelper\bin\Debug\net46\Assembly-CSharp.dll
+C:\自分用\hffmods\achievementhelper\obj\Debug\net46\Achievem.B6AE80F2.Up2Date

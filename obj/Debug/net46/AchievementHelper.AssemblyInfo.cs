@@ -13,8 +13,8 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AchievementHelper")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("0.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.0.0+e2a4d9cc2fb24b7ca648db3ef18e0acf29e15f49")]
-[assembly: System.Reflection.AssemblyProductAttribute("AchievementHelper")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.0.0+13541888483bfec8619dc7cc7921ec970643d9ee")]
+[assembly: System.Reflection.AssemblyProductAttribute("Achievement Helper")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AchievementHelper")]
 [assembly: System.Reflection.AssemblyVersionAttribute("0.0.0.0")]
 
