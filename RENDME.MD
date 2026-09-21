@@ -22,5 +22,5 @@ Show stats: `StatsAndAchievements`内のstatに関するフィールドの値を
 
 ## インストール
 1. Steam版Human Fall Flatに`BepInEx`をインストール
-2. [Releases](https://github.com/Msgames79/achievementhelper/Releases)からdllファイル(`AchievementHelper-(version).dll`)をダウンロード
+2. [Releases](https://github.com/Msgames79/achievementhelper/Releases/latest)からdllファイル(`AchievementHelper-(version).dll`)をダウンロード
 3. `AchievementHelper-(version).dll`を`BepInEx\plugins`に置く
