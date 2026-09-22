@@ -33,3 +33,12 @@ Show stats: `StatsAndAchievements`内のstatに関するフィールドの値を
 1. Steam版Human Fall Flatに`BepInEx`をインストール
 2. [Releases](https://github.com/Msgames79/achievementhelper/Releases/latest)からdllファイル(`AchievementHelper-(version).dll`)をダウンロード
 3. `AchievementHelper-(version).dll`を`BepInEx\plugins`に置く
+
+## バージョン履歴
+### 1.0.0
+初回リリース
+
+### 1.1.0
+- Stats表示UIの文字サイズと色を変更できるようにした
+- Statsの増加時に増分を表示(JumpとDrown以外)
+- Jumpが増えるかどうかのフラグを表示(中身はStateが`HumanState.Jump`以外かどうか判定)

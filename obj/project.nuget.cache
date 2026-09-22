@@ -1,10 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "d8Fsa5pFQtY=",
+  "dgSpecHash": "mXU3P5Ca3uQ=",
   "success": true,
   "projectFilePath": "C:\\自分用\\hffmods\\achievementhelper\\AchievementHelper.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Msgames79\\.nuget\\packages\\bepinex.analyzers\\1.0.8\\bepinex.analyzers.1.0.8.nupkg.sha512",
+    "C:\\Users\\Msgames79\\.nuget\\packages\\bepinex.assemblypublicizer.msbuild\\0.4.3\\bepinex.assemblypublicizer.msbuild.0.4.3.nupkg.sha512",
     "C:\\Users\\Msgames79\\.nuget\\packages\\bepinex.baselib\\5.4.20\\bepinex.baselib.5.4.20.nupkg.sha512",
     "C:\\Users\\Msgames79\\.nuget\\packages\\bepinex.core\\5.4.21\\bepinex.core.5.4.21.nupkg.sha512",
     "C:\\Users\\Msgames79\\.nuget\\packages\\bepinex.plugininfoprops\\2.1.0\\bepinex.plugininfoprops.2.1.0.nupkg.sha512",

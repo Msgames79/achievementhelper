@@ -1,9 +1,13 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Text;
+using System.Text.RegularExpressions;
 using BepInEx;
 using HumanAPI;
 using UnityEngine;
+using HarmonyLib;
+using System.Collections.Generic;
+using System.Net;
 
 namespace AchievementHelper;
 
@@ -16,13 +20,34 @@ public class Main : BaseUnityPlugin
     public static Main instance;
     private static GUILayoutOption[] guiLayoutOptions;
     private GUIStyle gUIStyle;
+    private GUIStyle gUIStyle2;
     private GUIStyle dontWrap;
     private GUIStyle idStyle;
+    private GUIStyle statsStyle;
     private bool isFirst = true;
     private string achievementId;
     private int idNum;
-    public static int achievementCount;
+    public readonly static int achievementCount;
     private string achievementName;
+    private Color statsColor = new Color(1, 0, 1);
+    private string statsSizeString = "30";
+    private string statsColorString = "F0F";
+    public StatMonitorHuman statMonitorHuman = FindObjectOfType<StatMonitorHuman>();
+    public static float oldTravelM;
+    public static int oldFall;
+    public static float oldClimbM;
+    public static float oldCarryM;
+    public static float oldShipM;
+    public static float oldDriveM;
+    public static float oldDumpsterM;
+    
+    public static float travelDelta;
+    public static int fallDelta;
+    public static float climbDelta;
+    public static float carryDelta;
+    public static float shipDelta;
+    public static float driveDelta;
+    public static float dumpsterDelta;
     private void Start()
     {
         Shell.RegisterCommand("sr", new Action(SteamResetAlias), null);
@@ -30,6 +55,8 @@ public class Main : BaseUnityPlugin
         Shell.RegisterCommand("su", new Action<string>(SteamUnlock), null);
         Shell.RegisterCommand("showstats", new Action(ShowStats), null);
         Shell.RegisterCommand("ss", new Action(ShowStats), null);
+        Harmony harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
+        harmony.PatchAll();
     }
 
     public static void SteamUnlock(string option)
@@ -102,10 +129,9 @@ public class Main : BaseUnityPlugin
         };
         Main.guiOpened = false;
         Main.instance = this;
-        Main.achievementCount = Enum.GetValues(typeof(Achievement)).Length;
     }
 
-    public unsafe void Update()
+    public void Update()
     {
         if (Game.instance != null)
         {
@@ -114,6 +140,44 @@ public class Main : BaseUnityPlugin
                 Main.guiOpened = !Main.guiOpened;
             }
         }
+    }
+
+    private void ChangeStatsStyle(string size, string color)
+    {
+        int sizeint;
+        if (!String.IsNullOrEmpty(color))
+        {
+            if (!ColorUtility.TryParseHtmlString(statsColorString.Substring(0, 1) == "#" ? color : "#" + color, out statsColor))
+            {
+                return;
+            }
+        }
+        else
+        {
+            return;
+        }
+        if (!String.IsNullOrEmpty(size))
+        {
+            if (Int32.TryParse(size,out sizeint))
+            {
+                if (sizeint <= 0)
+                {
+                    return;
+                }
+            }
+        }
+        else
+        {
+            return;
+        }
+        gUIStyle = new GUIStyle()
+        {
+            fontSize = sizeint,
+            normal =
+            {
+                textColor = statsColor
+            }
+        };
     }
 
     public void OnGUI()
@@ -128,7 +192,19 @@ public class Main : BaseUnityPlugin
             {
                 gUIStyle = new GUIStyle()
                 {
-                    fontSize = 30
+                    fontSize = 30,
+                    normal =
+                    {
+                        textColor = statsColor
+                    }
+                };
+                gUIStyle2 = new GUIStyle(GUI.skin.label)
+                {
+                    alignment = TextAnchor.LowerLeft,
+                    normal =
+                    {
+                        textColor = statsColor
+                    }
                 };
                 dontWrap = new GUIStyle()
                 {
@@ -145,32 +221,65 @@ public class Main : BaseUnityPlugin
                     wordWrap = false,
                     alignment = TextAnchor.LowerLeft,
                     fixedWidth = 40
-                    
+
                 };
+                statsStyle = new GUIStyle(GUI.skin.textField)
+                {
+                    wordWrap = false,
+                    alignment = TextAnchor.LowerLeft,
+                    fixedWidth = 70
+
+                };
+                oldTravelM = StatsAndAchievements.travelM;
+                oldFall = StatsAndAchievements.fall;
+                oldClimbM = StatsAndAchievements.climbM;
+                oldCarryM = StatsAndAchievements.carryM;
+                oldShipM = StatsAndAchievements.shipM;
+                oldDriveM = StatsAndAchievements.driveM;
+                oldDumpsterM = StatsAndAchievements.dumpsterM;
                 isFirst = false;
+                return;
             }
             if (showStats)
             {
-                StringBuilder status = new StringBuilder();
-                status.Append("TravelM ");
-                status.AppendLine(StatsAndAchievements.travelM.ToString());
-                status.Append("Fall ");
-                status.AppendLine(StatsAndAchievements.fall.ToString());
-                status.Append("Jump ");
-                status.AppendLine(StatsAndAchievements.jump.ToString());
-                status.Append("ClimbM ");
-                status.AppendLine(StatsAndAchievements.climbM.ToString());
-                status.Append("CarryM ");
-                status.AppendLine(StatsAndAchievements.carryM.ToString());
-                status.Append("Drown ");
-                status.AppendLine(StatsAndAchievements.drown.ToString());
-                status.Append("ShipM ");
-                status.AppendLine(StatsAndAchievements.shipM.ToString());
-                status.Append("DriveM ");
-                status.AppendLine(StatsAndAchievements.driveM.ToString());
-                status.Append("DumpstarM ");
-                status.AppendLine(StatsAndAchievements.dumpsterM.ToString());
-                GUILayout.Label(status.ToString(), gUIStyle);                                                         
+                if (StatsAndAchievements.travelM > oldTravelM)
+                {
+                    travelDelta = StatsAndAchievements.travelM - oldTravelM;
+                    oldTravelM = StatsAndAchievements.travelM;
+                }
+                if (StatsAndAchievements.fall > oldFall)
+                {
+                    fallDelta = StatsAndAchievements.fall - oldFall;
+                    oldFall = StatsAndAchievements.fall;
+                }
+                if (StatsAndAchievements.climbM > oldClimbM)
+                {
+                    climbDelta = StatsAndAchievements.climbM - oldClimbM;
+                    oldClimbM = StatsAndAchievements.climbM;
+                }
+                if (StatsAndAchievements.carryM > oldCarryM)
+                {
+                    carryDelta = StatsAndAchievements.carryM - oldCarryM;
+                    oldCarryM = StatsAndAchievements.carryM;
+                }
+                if (StatsAndAchievements.shipM > oldShipM)
+                {
+                    shipDelta = StatsAndAchievements.shipM - oldShipM;
+                    oldShipM = StatsAndAchievements.shipM;
+                }
+                if (StatsAndAchievements.driveM > oldDriveM)
+                {
+                    driveDelta = StatsAndAchievements.driveM - oldDriveM;
+                    oldDriveM = StatsAndAchievements.driveM;
+                }
+                if (StatsAndAchievements.dumpsterM > oldDumpsterM)
+                {
+                    dumpsterDelta = StatsAndAchievements.dumpsterM - oldDumpsterM;
+                    oldDumpsterM = StatsAndAchievements.dumpsterM;
+                }
+                string[] values = {StatsAndAchievements.travelM.ToString(), travelDelta.ToString(), StatsAndAchievements.fall.ToString(), fallDelta.ToString(), StatsAndAchievements.jump.ToString(), Human.localPlayer.state != HumanState.Jump ? "True" : "False", StatsAndAchievements.climbM.ToString(), climbDelta.ToString(), StatsAndAchievements.carryM.ToString(), carryDelta.ToString(), StatsAndAchievements.drown.ToString(), StatsAndAchievements.shipM.ToString(), shipDelta.ToString(), StatsAndAchievements.driveM.ToString(), driveDelta.ToString(), StatsAndAchievements.dumpsterM.ToString(), dumpsterDelta.ToString()};
+                string status = String.Format("TravelM {0} (+{1})\nFall {2} (+{3})\nJump {4} ({5})\nClimbM {6} (+{7})\nCarryM {8} (+{9})\nDrown {10}\nShipM {11} (+{12})\nDriveM {13} (+{14})\nDumpsterM {15} (+{16})", values);
+                GUILayout.Label(status, gUIStyle);
             }
             if (!String.IsNullOrEmpty(achievementId))
             {
@@ -190,6 +299,19 @@ public class Main : BaseUnityPlugin
             else
             {
                 achievementName = "Invalid";
+            }
+            if (!String.IsNullOrEmpty(statsColorString))
+            {
+                if (ColorUtility.TryParseHtmlString(statsColorString.Substring(0, 1) == "#" ? statsColorString : "#" + statsColorString, out statsColor))
+                {
+                    gUIStyle2 = new GUIStyle(GUI.skin.label)
+                    {
+                        normal =
+                        {
+                            textColor = statsColor
+                        }
+                    };
+                }
             }
         }
     }
@@ -220,7 +342,16 @@ public class Main : BaseUnityPlugin
         {
             SteamResetAlias();
         }
+        GUILayout.BeginHorizontal();
         showStats = GUILayout.Toggle(showStats, "Show stats", guiLayoutOptions);
+        statsSizeString = GUILayout.TextField(statsSizeString, statsStyle, guiLayoutOptions);
+        statsColorString = GUILayout.TextField(statsColorString, statsStyle, guiLayoutOptions);
+        GUILayout.Label("█", gUIStyle2);
+        if (GUILayout.Button("Apply change", guiLayoutOptions))
+        {
+            ChangeStatsStyle(statsSizeString, statsColorString);
+        }
+        GUILayout.EndHorizontal();
         GUI.DragWindow(new Rect(0f, 0f, Screen.width, Screen.height));
     }
 }
