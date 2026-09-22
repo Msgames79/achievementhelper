@@ -165,6 +165,10 @@ public class Main : BaseUnityPlugin
                     return;
                 }
             }
+            else
+            {
+                return;
+            }
         }
         else
         {

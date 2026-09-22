@@ -42,3 +42,6 @@ Show stats: `StatsAndAchievements`内のstatに関するフィールドの値を
 - Stats表示UIの文字サイズと色を変更できるようにした
 - Statsの増加時に増分を表示(JumpとDrown以外)
 - Jumpが増えるかどうかのフラグを表示(中身はStateが`HumanState.Jump`以外かどうか判定)
+
+### 1.1.1
+- 足りない`return`を追加
