@@ -5,6 +5,7 @@ if ($?) {
     $ErrorActionPreference = 'Continue'
     if (Get-ItemPropertyValue "HKCU:\Software\Valve\Steam\Apps\477160" "Running") {
         "Waiting HFF to Close"
+        Stop-Process -Name "Human", "dnSpy"
         while (Get-ItemPropertyValue "HKCU:\Software\Valve\Steam\Apps\477160" "Running") {
             Start-Sleep -Seconds 1
         }
@@ -14,7 +15,7 @@ if ($?) {
     } while (Test-Path "C:\Program Files (x86)\Steam\steamapps\common\Human Fall Flat\BepInEx\plugins\AchievementHelper.dll")
     do {
         Copy-Item "bin\Debug\net46\AchievementHelper.dll" "C:\Program Files (x86)\Steam\steamapps\common\Human Fall Flat\BepInEx\plugins\AchievementHelper.dll" -Force
-    } until ((Test-Path "C:\Program Files (x86)\Steam\steamapps\common\Human Fall Flat\BepInEx\plugins\AchievementHelper.dll"))
+    } until (Test-Path "C:\Program Files (x86)\Steam\steamapps\common\Human Fall Flat\BepInEx\plugins\AchievementHelper.dll")
     Start-Process "steam://rungameid/477160"
 } else {
     "Build failed"

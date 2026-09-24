@@ -8,6 +8,7 @@ using UnityEngine;
 using HarmonyLib;
 using System.Collections.Generic;
 using System.Net;
+using Steamworks;
 
 namespace AchievementHelper;
 
@@ -21,17 +22,18 @@ public class Main : BaseUnityPlugin
     private static GUILayoutOption[] guiLayoutOptions;
     private GUIStyle gUIStyle;
     private GUIStyle gUIStyle2;
+    private GUIStyle gUIStyle3;
     private GUIStyle dontWrap;
     private GUIStyle idStyle;
     private GUIStyle statsStyle;
     private bool isFirst = true;
     private string achievementId;
     private int idNum;
-    public readonly static int achievementCount;
+    public readonly static int achievementCount = Enum.GetValues(typeof(Achievement)).Length;
     private string achievementName;
-    private Color statsColor = new Color(1, 0, 1);
+    private Color statsColor = new Color(1f, 0f, 0f);
     private string statsSizeString = "30";
-    private string statsColorString = "F0F";
+    private string statsColorString = "F00";
     public StatMonitorHuman statMonitorHuman = FindObjectOfType<StatMonitorHuman>();
     public static float oldTravelM;
     public static int oldFall;
@@ -40,7 +42,7 @@ public class Main : BaseUnityPlugin
     public static float oldShipM;
     public static float oldDriveM;
     public static float oldDumpsterM;
-    
+
     public static float travelDelta;
     public static int fallDelta;
     public static float climbDelta;
@@ -48,6 +50,12 @@ public class Main : BaseUnityPlugin
     public static float shipDelta;
     public static float driveDelta;
     public static float dumpsterDelta;
+    private static int unlocked;
+    private static int unlockedSinceStartup;
+    private static int unlockedNsb;
+    private static int unlockedSb;
+    private static string lastUnlocked;
+    private static float showSaved = 0f;
     private void Start()
     {
         Shell.RegisterCommand("sr", new Action(SteamResetAlias), null);
@@ -95,9 +103,12 @@ public class Main : BaseUnityPlugin
                 }
             default:
                 {
-                    if (Int32.TryParse(option, out instance.idNum) && instance.idNum > 0 && instance.idNum <= achievementCount)
+                    if (Int32.TryParse(option, out instance.idNum))
                     {
-                        StatsAndAchievements.UnlockAchievement((Achievement)instance.idNum - 1, false, -1);
+                        if (instance.idNum > 0 && instance.idNum <= achievementCount)
+                        {
+                            StatsAndAchievements.UnlockAchievement((Achievement)instance.idNum - 1, false, -1);
+                        }
                     }
                     else if (String.IsNullOrWhiteSpace(option))
                     {
@@ -139,6 +150,10 @@ public class Main : BaseUnityPlugin
             {
                 Main.guiOpened = !Main.guiOpened;
             }
+            if (showSaved > 0f)
+            {
+                showSaved -= Time.unscaledDeltaTime;
+            }
         }
     }
 
@@ -158,7 +173,7 @@ public class Main : BaseUnityPlugin
         }
         if (!String.IsNullOrEmpty(size))
         {
-            if (Int32.TryParse(size,out sizeint))
+            if (Int32.TryParse(size, out sizeint))
             {
                 if (sizeint <= 0)
                 {
@@ -184,14 +199,36 @@ public class Main : BaseUnityPlugin
         };
     }
 
+    public static int GetNSB()
+    {
+        int i = 0;
+        foreach (Achievement achievement in StatsAndAchievements.unlocked)
+        {
+            if (achievement <= Achievement.ACH_SINGLE_RUN || achievement >= Achievement.ACH_INTRO_STATUE_HEAD || achievement == Achievement.ACH_FALL_1)
+            {
+                i++;
+            }
+        }
+        return i;
+    }
+
+    public static int GetNSB(List<Achievement> achievements)
+    {
+        int i = 0;
+        foreach (Achievement achievement in achievements)
+        {
+            if (achievement <= Achievement.ACH_SINGLE_RUN || achievement >= Achievement.ACH_INTRO_STATUE_HEAD || achievement == Achievement.ACH_FALL_1)
+            {
+                i++;
+            }
+        }
+        return i;
+    }
+
     public void OnGUI()
     {
         if (Game.instance != null)
         {
-            if (Main.guiOpened)
-            {
-                mainWindowRect = GUILayout.Window(1399186700, mainWindowRect, WindowFunction, "Achievement Helper", guiLayoutOptions);
-            }
             if (isFirst)
             {
                 gUIStyle = new GUIStyle()
@@ -208,6 +245,14 @@ public class Main : BaseUnityPlugin
                     normal =
                     {
                         textColor = statsColor
+                    }
+                };
+                gUIStyle3 = new GUIStyle()
+                {
+                    fontSize = 30,
+                    normal =
+                    {
+                        textColor = Color.red
                     }
                 };
                 dontWrap = new GUIStyle()
@@ -241,8 +286,15 @@ public class Main : BaseUnityPlugin
                 oldShipM = StatsAndAchievements.shipM;
                 oldDriveM = StatsAndAchievements.driveM;
                 oldDumpsterM = StatsAndAchievements.dumpsterM;
+                unlocked = unlockedSinceStartup = StatsAndAchievements.unlocked.Count;
+                unlockedNsb = GetNSB(StatsAndAchievements.unlocked);
+                unlockedSb = unlocked - unlockedNsb;
                 isFirst = false;
                 return;
+            }
+            if (Main.guiOpened)
+            {
+                mainWindowRect = GUILayout.Window(1399186700, mainWindowRect, WindowFunction, "Achievement Helper", guiLayoutOptions);
             }
             if (showStats)
             {
@@ -281,15 +333,28 @@ public class Main : BaseUnityPlugin
                     dumpsterDelta = StatsAndAchievements.dumpsterM - oldDumpsterM;
                     oldDumpsterM = StatsAndAchievements.dumpsterM;
                 }
-                string[] values = {StatsAndAchievements.travelM.ToString(), travelDelta.ToString(), StatsAndAchievements.fall.ToString(), fallDelta.ToString(), StatsAndAchievements.jump.ToString(), Human.localPlayer.state != HumanState.Jump ? "True" : "False", StatsAndAchievements.climbM.ToString(), climbDelta.ToString(), StatsAndAchievements.carryM.ToString(), carryDelta.ToString(), StatsAndAchievements.drown.ToString(), StatsAndAchievements.shipM.ToString(), shipDelta.ToString(), StatsAndAchievements.driveM.ToString(), driveDelta.ToString(), StatsAndAchievements.dumpsterM.ToString(), dumpsterDelta.ToString()};
-                string status = String.Format("TravelM {0} (+{1})\nFall {2} (+{3})\nJump {4} ({5})\nClimbM {6} (+{7})\nCarryM {8} (+{9})\nDrown {10}\nShipM {11} (+{12})\nDriveM {13} (+{14})\nDumpsterM {15} (+{16})", values);
-                GUILayout.Label(status, gUIStyle);
+                string[] values = { StatsAndAchievements.travelM.ToString(), travelDelta.ToString(), StatsAndAchievements.fall.ToString(), fallDelta.ToString(), StatsAndAchievements.jump.ToString(), Human.localPlayer.state != HumanState.Jump ? "True" : "False", StatsAndAchievements.climbM.ToString(), climbDelta.ToString(), StatsAndAchievements.carryM.ToString(), carryDelta.ToString(), StatsAndAchievements.drown.ToString(), StatsAndAchievements.shipM.ToString(), shipDelta.ToString(), StatsAndAchievements.driveM.ToString(), driveDelta.ToString(), StatsAndAchievements.dumpsterM.ToString(), dumpsterDelta.ToString() };
+                GUILayout.Label(string.Format("TravelM {0} (+{1})\nFall {2} (+{3})\nJump {4} ({5})\nClimbM {6} (+{7})\nCarryM {8} (+{9})\nDrown {10}\nShipM {11} (+{12})\nDriveM {13} (+{14})\nDumpsterM {15} (+{16})", values), gUIStyle);
+                if (unlocked > 0)
+                {
+                    string[] values1 = { unlocked.ToString(), achievementCount.ToString(), achievementCount == unlocked ? "Completed" : (achievementCount - unlocked).ToString() + " remaining", unlockedNsb.ToString(), (achievementCount - 11).ToString(), achievementCount - 11 == unlockedNsb ? "Completed" : (achievementCount - 11 - unlockedNsb).ToString() + " remaining", (unlocked - unlockedNsb).ToString(), "11", unlocked - unlockedNsb == 11 ? "Completed" : (11 - unlocked + unlockedNsb).ToString() + " remaining" };
+                    GUILayout.Label(string.Format("Unlocked: {0}/{1} ({2})\nNSB: {3}/{4} ({5})\nSB: {6}/{7} ({8})", values1), gUIStyle);
+                }
+                if (unlocked > unlockedSinceStartup)
+                {
+                    GUILayout.Label(string.Format("Last unlocked: {0}", lastUnlocked), gUIStyle);
+                }
+                if (showSaved > 0f)
+                {
+                    GUILayout.Label("Saved!", gUIStyle3);
+                }
             }
             if (!String.IsNullOrEmpty(achievementId))
             {
-                if (achievementId.Length > Math.Ceiling(Math.Log10((double)achievementCount)))
+                if (achievementId.Length > Math.Ceiling(Math.Log10(achievementCount)))
                 {
-                    achievementId = achievementId.Substring(0, (int)Math.Ceiling(Math.Log10((double)achievementCount)));
+                    Debug.Log(achievementCount);
+                    achievementId = achievementId.Substring(0, (int)Math.Ceiling(Math.Log10(achievementCount)));
                 }
                 if (Int32.TryParse(achievementId, out idNum) && idNum > 0 && idNum <= achievementCount)
                 {
@@ -357,5 +422,45 @@ public class Main : BaseUnityPlugin
         }
         GUILayout.EndHorizontal();
         GUI.DragWindow(new Rect(0f, 0f, Screen.width, Screen.height));
+    }
+
+    [HarmonyPatch(typeof(StatsAndAchievements), "Save")]
+    static class SaveDetector
+    {
+        [HarmonyPostfix]
+        public static void DetectSave()
+        {
+            showSaved = 1f;
+        }
+    }
+
+    [HarmonyPatch(typeof(StatsAndAchievements), "OnAchievementStored")]
+    static class UnlockDetector
+    {
+        [HarmonyPostfix]
+        public static void DetectSave(ref CGameID ___m_GameID, ref UserAchievementStored_t pCallback)
+        {
+            if ((ulong)___m_GameID == pCallback.m_nGameID)
+            {
+                if (pCallback.m_nMaxProgress == 0)
+                {
+                    unlocked++;
+                    unlockedNsb = Main.GetNSB();
+                    unlockedSb = unlocked - unlockedNsb;
+                    lastUnlocked = Enum.GetName(typeof(Achievement), SteamAchievementMap.achievementMap[pCallback.m_rgchAchievementName]);
+                    return;
+                }
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(CheatCodes), "SteamReset")]
+    static class ResetDetector
+    {
+        [HarmonyPostfix]
+        public static void OnReset()
+        {
+            unlocked = unlockedNsb = unlockedSinceStartup = 0;
+        }
     }
 }
