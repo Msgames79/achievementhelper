@@ -45,3 +45,8 @@ Show stats: `StatsAndAchievements`内のstatに関するフィールドの値を
 
 ### 1.1.1
 - 足りない`return`を追加
+
+### 1.2.0
+- `StatsAndAchiEvements.Save()`のタイミング表示
+- 直近で解除した実績の表示
+- 解除した数の表示(All、SB、NSB)
