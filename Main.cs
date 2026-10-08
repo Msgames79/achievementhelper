@@ -9,32 +9,209 @@ using HarmonyLib;
 using System.Collections.Generic;
 using System.Net;
 using Steamworks;
-
+using System.Security;
+using UniverseLib.UI;
+using UniverseLib.UI.Panels;
+using UnityEngine.UI;
+using Multiplayer;
+using System.Configuration;
+using System.Collections;
+using Mono.Security.X509.Extensions;
+using System.Xml.Linq;
 namespace AchievementHelper;
-
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public class Main : BaseUnityPlugin
 {
-    private static bool guiOpened;
-    private bool showStats;
-    private Rect mainWindowRect;
     public static Main instance;
-    private static GUILayoutOption[] guiLayoutOptions;
-    private GUIStyle gUIStyle;
-    private GUIStyle gUIStyle2;
-    private GUIStyle gUIStyle3;
-    private GUIStyle dontWrap;
-    private GUIStyle idStyle;
-    private GUIStyle statsStyle;
-    private bool isFirst = true;
-    private string achievementId;
-    private int idNum;
-    public readonly static int achievementCount = Enum.GetValues(typeof(Achievement)).Length;
-    private string achievementName;
-    private Color statsColor = new Color(1f, 0f, 0f);
-    private string statsSizeString = "30";
-    private string statsColorString = "F00";
-    public StatMonitorHuman statMonitorHuman = FindObjectOfType<StatMonitorHuman>();
+    public bool guiOpened;
+    public Rect mainWindowRect;
+    void ShellFunction(string arg)
+    {
+        if (string.IsNullOrEmpty(arg))
+        {
+            Debug.Log("Invalid argument");
+            return;
+        }
+        string[] args = arg.Split(' ');
+        if (args.Length == 0)
+        {
+            Debug.Log("Invalid argument");
+            return;
+        }
+        switch (args[0].ToLower())
+        {
+            case "unlock":
+            case "u":
+                {
+                    if (args.Length == 1)
+                    {
+                        AHUnlockAchievements("all");
+                        return;
+                    }
+                    AHUnlockAchievements(args[1]);
+                    return;
+                }
+            case "reset":
+            case "r":
+                {
+                    AHResetAchievements();
+                    return;
+                }
+            case "showstatus":
+            case "ss":
+                {
+                    showStatus = !showStatus;
+                    return;
+                }
+            default:
+                {
+                    Debug.Log("Invalid argument");
+                    return;
+                }
+        }
+    }
+    void AHResetAchievements()
+    {
+        Shell.RawInvoke("steamreset");
+    }
+    void AHUnlockAchievements(string arg)
+    {
+        if (string.IsNullOrEmpty(arg))
+        {
+            Debug.Log("Invalid argument");
+            return;
+        }
+        switch (arg)
+        {
+            case "all":
+                {
+                    AHUnlockAchievements("nsb");
+                    AHUnlockAchievements("sb");
+                    return;
+                }
+            case "nsb":
+                {
+                    foreach (Achievement achievement in Enum.GetValues(typeof(Achievement)))
+                    {
+                        if (achievement <= Achievement.ACH_SINGLE_RUN || achievement >= Achievement.ACH_INTRO_STATUE_HEAD || achievement == Achievement.ACH_FALL_1)
+                        {
+                            if (!StatsAndAchievements.unlocked.Contains(achievement))
+                            {
+                                StatsAndAchievements.UnlockAchievement(achievement, false, -1);
+                            }
+                        }
+                    }
+                    return;
+                }
+            case "sb":
+                {
+                    StatsAndAchievements.travelM = StatsAndAchievements.travelM < 25000f ? 25000f : StatsAndAchievements.travelM;
+                    StatsAndAchievements.climbM = StatsAndAchievements.climbM < 100f ? 100f : StatsAndAchievements.climbM;
+                    StatsAndAchievements.carryM = StatsAndAchievements.carryM < 1000f ? 1000f : StatsAndAchievements.carryM;
+                    StatsAndAchievements.shipM = StatsAndAchievements.shipM < 1000f ? 1000f : StatsAndAchievements.shipM;
+                    StatsAndAchievements.driveM = StatsAndAchievements.driveM < 1000f ? 1000f : StatsAndAchievements.driveM;
+                    StatsAndAchievements.dumpsterM = StatsAndAchievements.dumpsterM < 50f ? 50f : StatsAndAchievements.dumpsterM;
+                    StatsAndAchievements.fall = StatsAndAchievements.fall < 100 ? 100 : StatsAndAchievements.fall;
+                    StatsAndAchievements.jump = StatsAndAchievements.jump < 1000 ? 1000 : StatsAndAchievements.jump;
+                    StatsAndAchievements.drown = StatsAndAchievements.drown < 10 ? 10 : StatsAndAchievements.drown;
+                    StatsAndAchievements.Save();
+                    return;
+                }
+            default:
+                {
+                    int idNum;
+                    if (Int32.TryParse(arg, out idNum))
+                    {
+                        Array numbers = Enum.GetValues(typeof(Achievement));
+                        if ((idNum >= 1 && idNum <= 11) || idNum == 15 || (idNum >= 24 && idNum <= numbers.Length))
+                        {
+                            if (StatsAndAchievements.unlocked.Contains((Achievement)idNum - 1))
+                            {
+                                Debug.Log("Already unlocked");
+                                return;
+                            }
+                            StatsAndAchievements.UnlockAchievement((Achievement)idNum - 1, false, -1);
+                            return;
+                        }
+                        else if (idNum >= 12 && idNum <= 23)
+                        {
+                            switch ((Achievement)idNum - 1)
+                            {
+                                case Achievement.ACH_TRAVEL_1KM:
+                                    {
+                                        StatsAndAchievements.travelM = StatsAndAchievements.travelM < 1000f ? 1000f : StatsAndAchievements.travelM;
+                                        break;
+                                    }
+                                case Achievement.ACH_TRAVEL_10KM:
+                                    {
+                                        StatsAndAchievements.travelM = StatsAndAchievements.travelM < 10000f ? 10000f : StatsAndAchievements.travelM;
+                                        break;
+                                    }
+                                case Achievement.ACH_TRAVEL_100KM:
+                                    {
+                                        StatsAndAchievements.travelM = StatsAndAchievements.travelM < 25000f ? 25000f : StatsAndAchievements.travelM;
+                                        break;
+                                    }
+                                case Achievement.ACH_FALL_1000:
+                                    {
+                                        StatsAndAchievements.fall = StatsAndAchievements.fall < 100 ? 100 : StatsAndAchievements.fall;
+                                        break;
+                                    }
+                                case Achievement.ACH_JUMP_1000:
+                                    {
+                                        StatsAndAchievements.jump = StatsAndAchievements.jump < 1000 ? 1000 : StatsAndAchievements.jump;
+                                        break;
+                                    }
+                                case Achievement.ACH_CLIMB_100M:
+                                    {
+                                        StatsAndAchievements.climbM = StatsAndAchievements.climbM < 100f ? 100f : StatsAndAchievements.climbM;
+                                        break;
+                                    }
+                                case Achievement.ACH_CARRY_1000M:
+                                    {
+                                        StatsAndAchievements.carryM = StatsAndAchievements.carryM < 1000f ? 1000f : StatsAndAchievements.carryM;
+                                        break;
+                                    }
+                                case Achievement.ACH_DROWN_10:
+                                    {
+                                        StatsAndAchievements.drown = StatsAndAchievements.drown < 10 ? 10 : StatsAndAchievements.drown;
+                                        break;
+                                    }
+                                case Achievement.ACH_SHIP_1000M:
+                                    {
+                                        StatsAndAchievements.shipM = StatsAndAchievements.shipM < 1000f ? 1000f : StatsAndAchievements.shipM;
+                                        break;
+                                    }
+                                case Achievement.ACH_DRIVE_1000M:
+                                    {
+                                        StatsAndAchievements.driveM = StatsAndAchievements.driveM < 1000f ? 1000f : StatsAndAchievements.driveM;
+                                        break;
+                                    }
+                                case Achievement.ACH_DUMPSTER_50M:
+                                    {
+                                        StatsAndAchievements.dumpsterM = StatsAndAchievements.dumpsterM < 50f ? 50f : StatsAndAchievements.dumpsterM;
+                                        break;
+                                    }
+                            }
+                            StatsAndAchievements.Save();
+                        }
+                        else
+                        {
+                            Debug.Log("Out of range");
+                        }
+                    }
+                    else if (String.IsNullOrWhiteSpace(arg))
+                    {
+                        AHUnlockAchievements("all");
+                    }
+                    else
+                    {
+                        Debug.Log("Invalid argument");
+                    }
+                    return;
+                }
+        }
+    }
     public static float oldTravelM;
     public static int oldFall;
     public static float oldClimbM;
@@ -42,7 +219,6 @@ public class Main : BaseUnityPlugin
     public static float oldShipM;
     public static float oldDriveM;
     public static float oldDumpsterM;
-
     public static float travelDelta;
     public static int fallDelta;
     public static float climbDelta;
@@ -57,173 +233,22 @@ public class Main : BaseUnityPlugin
     private static Achievement? lastUnlocked = null;
     private static Achievement? lastUnlockedNsb = null;
     private static Achievement? lastUnlockedSb = null;
-    private static float showSaved = 0f;
-    private static bool doStatsUpdate = false;
-    private static object[] values;
-    private static object[] values1;
-    private void Start()
+    private static float showSaved;
+    private static GUIStyle ahStatusStyle;
+    private static int ahStatusSize = 20;
+    private static Color ahStatusColor;
+    private static int ahStatusColorInt = 0xFF00FF;
+    private static bool doUpdteAhStatusStyle;
+    private static bool firstUpdate = true;
+    void Start()
     {
-
-        Shell.RegisterCommand("sr", new Action(SteamResetAlias), null);
-        Shell.RegisterCommand("steamunlock", new Action<string>(SteamUnlock), null);
-        Shell.RegisterCommand("su", new Action<string>(SteamUnlock), null);
-        Shell.RegisterCommand("showstats", new Action(ShowStats), null);
-        Shell.RegisterCommand("ss", new Action(ShowStats), null);
+        Shell.RegisterCommand("achievementhelper", new Action<string>(ShellFunction), null);
+        Shell.RegisterCommand("ah", new Action<string>(ShellFunction), null);
+        mainWindowRect = new Rect(720f, 60f, 0f, 0f);
+        instance = this;
         Harmony harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
         harmony.PatchAll();
     }
-
-    public static void SteamUnlock(string option)
-    {
-        doStatsUpdate = true;
-        switch (option)
-        {
-            case "all":
-                {
-                    foreach (Achievement achievement in Enum.GetValues(typeof(Achievement)))
-                    {
-                        StatsAndAchievements.UnlockAchievement(achievement, false, -1);
-                    }
-                    return;
-                }
-            case "nsb":
-                {
-                    foreach (Achievement achievement in Enum.GetValues(typeof(Achievement)))
-                    {
-                        if (achievement <= Achievement.ACH_SINGLE_RUN || achievement >= Achievement.ACH_INTRO_STATUE_HEAD || achievement == Achievement.ACH_FALL_1)
-                        {
-                            StatsAndAchievements.UnlockAchievement(achievement, false, -1);
-                        }
-                    }
-                    return;
-                }
-            case "sb":
-                {
-                    foreach (Achievement achievement in Enum.GetValues(typeof(Achievement)))
-                    {
-                        if (achievement >= Achievement.ACH_TRAVEL_1KM && achievement <= Achievement.ACH_DUMPSTER_50M && achievement != Achievement.ACH_FALL_1)
-                        {
-                            StatsAndAchievements.UnlockAchievement(achievement, false, -1);
-                        }
-                    }
-                    return;
-                }
-            default:
-                {
-                    if (Int32.TryParse(option, out instance.idNum))
-                    {
-                        if (instance.idNum > 0 && instance.idNum <= achievementCount)
-                        {
-                            StatsAndAchievements.UnlockAchievement((Achievement)instance.idNum - 1, false, -1);
-                        }
-                    }
-                    else if (String.IsNullOrWhiteSpace(option))
-                    {
-                        foreach (Achievement achievement in Enum.GetValues(typeof(Achievement)))
-                        {
-                            StatsAndAchievements.UnlockAchievement(achievement, false, -1);
-                        }
-                    }
-                    return;
-                }
-        }
-    }
-    public static void SteamResetAlias()
-    {
-        Shell.RawInvoke("steamreset");
-        doStatsUpdate = true;
-    }
-    public static void ShowStats()
-    {
-        instance.showStats = !instance.showStats;
-        if (instance.showStats)
-        {
-            doStatsUpdate = true;
-        }
-    }
-    public void Awake()
-    {
-        mainWindowRect = new Rect(330, 750, 381, 200);
-        guiLayoutOptions = new GUILayoutOption[]
-        {
-            GUILayout.ExpandWidth(true),
-            GUILayout.ExpandHeight(false),
-            GUILayout.MaxWidth(Screen.width)
-        };
-        guiOpened = false;
-        instance = this;
-    }
-
-    public void Update()
-    {
-        if (Game.instance != null)
-        {
-            if (Input.GetKeyDown(KeyCode.Home))
-            {
-                guiOpened = !guiOpened;
-            }
-            if (showSaved > 0f)
-            {
-                showSaved -= Time.unscaledDeltaTime;
-            }
-        }
-    }
-
-    private void ChangeStatsStyle(string size, string color)
-    {
-        int sizeint;
-        if (!string.IsNullOrEmpty(color))
-        {
-            if (!ColorUtility.TryParseHtmlString(statsColorString.Substring(0, 1) == "#" ? color : "#" + color, out statsColor))
-            {
-                return;
-            }
-        }
-        else
-        {
-            return;
-        }
-        if (!string.IsNullOrEmpty(size))
-        {
-            if (int.TryParse(size, out sizeint))
-            {
-                if (sizeint <= 0)
-                {
-                    return;
-                }
-            }
-            else
-            {
-                return;
-            }
-        }
-        else
-        {
-            return;
-        }
-        gUIStyle = new GUIStyle()
-        {
-            fontSize = sizeint,
-            normal =
-            {
-                textColor = statsColor
-            }
-        };
-    }
-
-    public static int GetNSB()
-    {
-        int i = 0;
-        foreach (Achievement achievement in StatsAndAchievements.unlocked)
-        {
-            if (achievement <= Achievement.ACH_SINGLE_RUN || achievement >= Achievement.ACH_INTRO_STATUE_HEAD || achievement == Achievement.ACH_FALL_1)
-            {
-                i++;
-            }
-        }
-        return i;
-    }
-
     public static int GetNSB(List<Achievement> achievements)
     {
         int i = 0;
@@ -236,61 +261,13 @@ public class Main : BaseUnityPlugin
         }
         return i;
     }
-
-    public void OnGUI()
+    private readonly int achievementCount = Enum.GetValues(typeof(Achievement)).Length;
+    void Update()
     {
         if (Game.instance != null)
         {
-            if (isFirst)
+            if (firstUpdate)
             {
-                gUIStyle = new GUIStyle()
-                {
-                    fontSize = 30,
-                    normal =
-                    {
-                        textColor = statsColor
-                    }
-                };
-                gUIStyle2 = new GUIStyle(GUI.skin.label)
-                {
-                    alignment = TextAnchor.LowerLeft,
-                    normal =
-                    {
-                        textColor = statsColor
-                    }
-                };
-                gUIStyle3 = new GUIStyle()
-                {
-                    fontSize = 30,
-                    normal =
-                    {
-                        textColor = Color.red
-                    }
-                };
-                dontWrap = new GUIStyle()
-                {
-                    wordWrap = false,
-                    margin = new RectOffset(0, 0, 8, 0),
-                    alignment = TextAnchor.MiddleCenter,
-                    normal =
-                    {
-                        textColor = Color.white
-                    }
-                };
-                idStyle = new GUIStyle(GUI.skin.textField)
-                {
-                    wordWrap = false,
-                    alignment = TextAnchor.LowerLeft,
-                    fixedWidth = 40
-
-                };
-                statsStyle = new GUIStyle(GUI.skin.textField)
-                {
-                    wordWrap = false,
-                    alignment = TextAnchor.LowerLeft,
-                    fixedWidth = 70
-
-                };
                 oldTravelM = StatsAndAchievements.travelM;
                 oldFall = StatsAndAchievements.fall;
                 oldClimbM = StatsAndAchievements.climbM;
@@ -301,153 +278,647 @@ public class Main : BaseUnityPlugin
                 unlocked = unlockedSinceStartup = StatsAndAchievements.unlocked.Count;
                 unlockedNsb = GetNSB(StatsAndAchievements.unlocked);
                 unlockedSb = unlocked - unlockedNsb;
-                isFirst = false;
-                return;
+                travelDelta = climbDelta = carryDelta = shipDelta = driveDelta = dumpsterDelta = 0;
+                fallDelta = 0;
+                firstUpdate = false;
             }
-            if (guiOpened)
+            if (Input.GetKeyDown(KeyCode.Home))
             {
-                mainWindowRect = GUILayout.Window(1399186700, mainWindowRect, WindowFunction, "Achievement Helper", guiLayoutOptions);
+                guiOpened = !guiOpened;
             }
-            if (showStats)
+            if (showSaved > 0f)
             {
-                if (StatsAndAchievements.travelM > oldTravelM)
+                showSaved -= Time.unscaledDeltaTime;
+                if (showSaved <= 0f)
                 {
-                    travelDelta = StatsAndAchievements.travelM - oldTravelM;
-                    oldTravelM = StatsAndAchievements.travelM;
-                    doStatsUpdate = true;
-                }
-                if (StatsAndAchievements.fall > oldFall)
-                {
-                    fallDelta = StatsAndAchievements.fall - oldFall;
-                    oldFall = StatsAndAchievements.fall;
-                    doStatsUpdate = true;
-                }
-                if (StatsAndAchievements.climbM > oldClimbM)
-                {
-                    climbDelta = StatsAndAchievements.climbM - oldClimbM;
-                    oldClimbM = StatsAndAchievements.climbM;
-                    doStatsUpdate = true;
-                }
-                if (StatsAndAchievements.carryM > oldCarryM)
-                {
-                    carryDelta = StatsAndAchievements.carryM - oldCarryM;
-                    oldCarryM = StatsAndAchievements.carryM;
-                    doStatsUpdate = true;
-                }
-                if (StatsAndAchievements.shipM > oldShipM)
-                {
-                    shipDelta = StatsAndAchievements.shipM - oldShipM;
-                    oldShipM = StatsAndAchievements.shipM;
-                    doStatsUpdate = true;
-                }
-                if (StatsAndAchievements.driveM > oldDriveM)
-                {
-                    driveDelta = StatsAndAchievements.driveM - oldDriveM;
-                    oldDriveM = StatsAndAchievements.driveM;
-                    doStatsUpdate = true;
-                }
-                if (StatsAndAchievements.dumpsterM > oldDumpsterM)
-                {
-                    dumpsterDelta = StatsAndAchievements.dumpsterM - oldDumpsterM;
-                    oldDumpsterM = StatsAndAchievements.dumpsterM;
-                    doStatsUpdate = true;
-                }
-                if (doStatsUpdate)
-                {
-                    values = [StatsAndAchievements.travelM, travelDelta, StatsAndAchievements.travelM < 1000f ? 0 : StatsAndAchievements.travelM < 10000f ? 1 : StatsAndAchievements.travelM < 25000f ? 2 : 3, StatsAndAchievements.fall, fallDelta, StatsAndAchievements.jump, Human.localPlayer.state != HumanState.Jump ? "True" : "False", StatsAndAchievements.climbM, climbDelta, StatsAndAchievements.carryM, carryDelta, StatsAndAchievements.drown, StatsAndAchievements.shipM, shipDelta, StatsAndAchievements.driveM, driveDelta, StatsAndAchievements.dumpsterM, dumpsterDelta, unlocked, achievementCount, achievementCount == unlocked ? "Completed" : (achievementCount - unlocked).ToString() + " remaining", unlockedNsb, achievementCount - 11, achievementCount - 11 == unlockedNsb ? "Completed" : (achievementCount - 11 - unlockedNsb).ToString() + " remaining", (unlocked - unlockedNsb), unlocked - unlockedNsb == 11 ? "Completed" : (11 - unlocked + unlockedNsb).ToString() + " remaining"];
-                    values1 = [lastUnlocked, lastUnlockedNsb == null ? "None" : lastUnlockedNsb, lastUnlockedSb == null ? "None" : lastUnlockedSb];
-                }
-                GUILayout.Label(string.Format("TravelM {0} (+{1}) ({2}/3)\nFall {3} (+{4})\nJump {5} ({6})\nClimbM {7} (+{8})\nCarryM {9} (+{10})\nDrown {11}\nShipM {12} (+{13})\nDriveM {14} (+{15})\nDumpsterM {16} (+{17})\nUnlocked: {18}/{19} ({20})\nNSB: {21}/{22} ({23})\nSB: {24}/11 ({25})", values), gUIStyle);
-                if (unlocked > unlockedSinceStartup)
-                {
-                    GUILayout.Label(string.Format("Last unlocked: {0}\nNSB: {1}\nSB: {2}", values1), gUIStyle);
-                }
-                if (!StatsAndAchievements.unlocked.Contains(Achievement.ACH_SINGLE_RUN))
-                {
-                    GUILayout.Label($"Single run: {Game.instance.singleRun}", gUIStyle);
-                    }
-                if (showSaved > 0f)
-                {
-                    GUILayout.Label("Saved!", gUIStyle3);
                 }
             }
-            if (!string.IsNullOrEmpty(achievementId))
+            if (doUpdteAhStatusStyle)
             {
-                if (achievementId.Length > Math.Ceiling(Math.Log10(achievementCount)))
+                if (ColorUtility.TryParseHtmlString("#" + ahStatusColorInt.ToString("X6"), out ahStatusColor))
                 {
-                    achievementId = achievementId.Substring(0, (int)Math.Ceiling(Math.Log10(achievementCount)));
-                }
-                if (int.TryParse(achievementId, out idNum) && idNum > 0 && idNum <= achievementCount)
-                {
-                    achievementName = Enum.GetName(typeof(Achievement), idNum - 1);
-                }
-                else
-                {
-                    achievementName = "Invalid";
-                }
-            }
-            else
-            {
-                achievementName = "Invalid";
-            }
-            if (!String.IsNullOrEmpty(statsColorString))
-            {
-                if (ColorUtility.TryParseHtmlString(statsColorString.Substring(0, 1) == "#" ? statsColorString : "#" + statsColorString, out statsColor))
-                {
-                    gUIStyle2 = new GUIStyle(GUI.skin.label)
+                    ahStatusStyle = new GUIStyle()
                     {
+                        fontSize = ahStatusSize,
                         normal =
                         {
-                            textColor = statsColor
+                            textColor = ahStatusColor
                         }
                     };
+                    doUpdteAhStatusStyle = false;
+                }
+            }
+            if (StatsAndAchievements.travelM > oldTravelM)
+            {
+                travelDelta = StatsAndAchievements.travelM - oldTravelM;
+                oldTravelM = StatsAndAchievements.travelM;
+            }
+            if (StatsAndAchievements.fall > oldFall)
+            {
+                fallDelta = StatsAndAchievements.fall - oldFall;
+                oldFall = StatsAndAchievements.fall;
+            }
+            if (StatsAndAchievements.climbM > oldClimbM)
+            {
+                climbDelta = StatsAndAchievements.climbM - oldClimbM;
+                oldClimbM = StatsAndAchievements.climbM;
+            }
+            if (StatsAndAchievements.carryM > oldCarryM)
+            {
+                carryDelta = StatsAndAchievements.carryM - oldCarryM;
+                oldCarryM = StatsAndAchievements.carryM;
+            }
+            if (StatsAndAchievements.shipM > oldShipM)
+            {
+                shipDelta = StatsAndAchievements.shipM - oldShipM;
+                oldShipM = StatsAndAchievements.shipM;
+            }
+            if (StatsAndAchievements.driveM > oldDriveM)
+            {
+                driveDelta = StatsAndAchievements.driveM - oldDriveM;
+                oldDriveM = StatsAndAchievements.driveM;
+            }
+            if (StatsAndAchievements.dumpsterM > oldDumpsterM)
+            {
+                dumpsterDelta = StatsAndAchievements.dumpsterM - oldDumpsterM;
+                oldDumpsterM = StatsAndAchievements.dumpsterM;
+            }
+            if (showStatus)
+            {
+                ahStatus.Clear();
+                for (int i = 0; i < statusStrings.Length; i++)
+                {
+                    if (statusShowing[i])
+                    {
+                        switch (statusStrings[i])
+                        {
+                            case "TravelM":
+                                {
+                                    ahStatus.AppendLine(string.Format("TravelM {0} (+{1}) ({2}/3)", StatsAndAchievements.travelM, travelDelta, StatsAndAchievements.travelM < 1000f ? 0 : StatsAndAchievements.travelM < 10000f ? 1 : StatsAndAchievements.travelM < 25000f ? 2 : 3));
+                                    break;
+                                }
+                            case "Fall":
+                                {
+                                    ahStatus.AppendLine(string.Format("Fall {0} (+{1})", StatsAndAchievements.fall, fallDelta));
+                                    break;
+                                }
+                            case "Jump":
+                                {
+                                    ahStatus.AppendLine(string.Format("Jump {0} ({1})", StatsAndAchievements.jump, Human.localPlayer.state != HumanState.Jump ? "True" : "False"));
+                                    break;
+                                }
+                            case "ClimbM":
+                                {
+                                    ahStatus.AppendLine(string.Format("ClimbM {0} (+{1})", StatsAndAchievements.climbM, climbDelta));
+                                    break;
+                                }
+                            case "CarryM":
+                                {
+                                    ahStatus.AppendLine(string.Format("CarryM {0} (+{1})", StatsAndAchievements.carryM, carryDelta));
+                                    break;
+                                }
+                            case "Drown":
+                                {
+                                    ahStatus.AppendLine(string.Format("Drown {0}", StatsAndAchievements.drown));
+                                    break;
+                                }
+                            case "ShipM":
+                                {
+                                    ahStatus.AppendLine(string.Format("ShipM {0} (+{1})", StatsAndAchievements.shipM, shipDelta));
+                                    break;
+                                }
+                            case "DriveM":
+                                {
+                                    ahStatus.AppendLine(string.Format("DriveM {0} (+{1})", StatsAndAchievements.driveM, driveDelta));
+                                    break;
+                                }
+                            case "DumpsterM":
+                                {
+                                    ahStatus.AppendLine(string.Format("DumpsterM {0} (+{1})", StatsAndAchievements.dumpsterM, dumpsterDelta));
+                                    break;
+                                }
+                            case "UnlockedCount":
+                                {
+                                    ahStatus.AppendLine(string.Format("Unlocked: {0}/{1} ({2})", unlocked, achievementCount, achievementCount == unlocked ? "Completed" : (achievementCount - unlocked).ToString() + " remaining"));
+                                    break;
+                                }
+                            case "UnlockedCountNSB":
+                                {
+                                    ahStatus.AppendLine(string.Format("Unlocked(NSB): {0}/{1} ({2})", unlockedNsb, achievementCount - 11, achievementCount - 11 == unlockedNsb ? "Completed" : (achievementCount - 11 - unlockedNsb).ToString() + " remaining"));
+                                    break;
+                                }
+                            case "UnlockedCountSB":
+                                {
+                                    ahStatus.AppendLine(string.Format("Unlocked(SB): {0}/{1} ({2})", unlockedSb, 11, unlocked - unlockedNsb == 11 ? "Completed" : (11 - unlocked + unlockedNsb).ToString() + " remaining"));
+                                    break;
+                                }
+                            case "LastUnlocked":
+                                {
+                                    if (unlocked > unlockedSinceStartup)
+                                    {
+                                        ahStatus.AppendLine(string.Format("Last unlocked: {0}", lastUnlocked == null ? "None" : lastUnlocked));
+                                    }
+                                    break;
+                                }
+                            case "LastUnlockedNSB":
+                                {
+                                    if (unlocked > unlockedSinceStartup)
+                                    {
+                                        ahStatus.AppendLine(string.Format("Last unlocked(NSB): {0}", lastUnlockedNsb == null ? "None" : lastUnlockedNsb));
+                                    }
+                                    break;
+                                }
+                            case "LastUnlockedSB":
+                                {
+                                    if (unlocked > unlockedSinceStartup)
+                                    {
+                                        ahStatus.AppendLine(string.Format("Last unlocked(SB): {0}", lastUnlockedSb == null ? "None" : lastUnlockedSb));
+                                    }
+                                    break;
+                                }
+                            case "IsSingleRun":
+                                {
+                                    if (!StatsAndAchievements.unlocked.Contains(Achievement.ACH_SINGLE_RUN))
+                                    {
+                                        ahStatus.AppendLine(string.Format("IsSingleRun: {0}", Game.instance.singleRun));
+                                    }
+                                    break;
+                                }
+                            case "SavedTiming":
+                                {
+                                    if (showSaved > 0f)
+                                    {
+                                        ahStatus.AppendLine("Saved!");
+                                    }
+                                    break;
+                                }
+                        }
+                    }
+                }
+                if (ahStatus.Length > 0)
+                {
+                    ahStatus.Length--;
                 }
             }
         }
     }
-
-    void WindowFunction(int windowID)
+    private static int achIndex = 1;
+    private static bool showStatus = false;
+    private static bool oldShowStatus = false;
+    private static GUILayoutOption[] expandOptions;
+    private static GUIStyle noWrapLabelStyle;
+    private static GUIStyle noWrapTextFieldStyle;
+    private static GUIStyle noWrapButtonStyle;
+    private static GUIStyle noWrapToggleStyle;
+    private static string[] statusStrings = { "TravelM", "Fall", "Jump", "ClimbM", "CarryM", "Drown", "ShipM", "DriveM", "DumpsterM", "UnlockedCount", "UnlockedCountNSB", "UnlockedCountSB", "LastUnlocked", "LastUnlockedNSB", "LastUnlockedSB", "IsSingleRun", "SavedTiming" };
+    private static BitArray statusShowing = new BitArray(statusStrings.Length, true);
+    private static float ahStatusX, ahStatusY;
+    void WindowFunction(int windowId)
     {
-        if (GUILayout.Button("Unlock all achievements", guiLayoutOptions))
+        switch (windowId)
         {
-            SteamUnlock("all");
-        }
-        if (GUILayout.Button("Unlock NSB achievements", guiLayoutOptions))
-        {
-            SteamUnlock("nsb");
-        }
-        if (GUILayout.Button("Unlock SB achievements", guiLayoutOptions))
-        {
-            SteamUnlock("sb");
-        }
-        GUILayout.BeginHorizontal();
-        achievementId = GUILayout.TextField(achievementId, idStyle, guiLayoutOptions);
-        GUILayout.Label(achievementName, dontWrap, guiLayoutOptions);
-        GUILayout.EndHorizontal();
-        if (GUILayout.Button("Unlock this achievement", guiLayoutOptions) && idNum > 0 && idNum <= achievementCount)
-        {
-            StatsAndAchievements.UnlockAchievement((Achievement)idNum - 1, false, -1);
-        }
-        if (GUILayout.Button("Reset achievements", guiLayoutOptions))
-        {
-            SteamResetAlias();
-        }
-        GUILayout.BeginHorizontal();
-        if (GUILayout.Button("Show stats", guiLayoutOptions))
-        {
-            ShowStats();
-        }
-        statsSizeString = GUILayout.TextField(statsSizeString, statsStyle, guiLayoutOptions);
-        statsColorString = GUILayout.TextField(statsColorString, statsStyle, guiLayoutOptions);
-        GUILayout.Label("█", gUIStyle2);
-        if (GUILayout.Button("Apply change", guiLayoutOptions))
-        {
-            ChangeStatsStyle(statsSizeString, statsColorString);
-        }
-        GUILayout.EndHorizontal();
-        GUI.DragWindow(new Rect(0f, 0f, Screen.width, Screen.height));
-    }
+            case 1399186700:
+                {
+                    using (var horizontalScope = new GUILayout.HorizontalScope())
+                    {
+                        using (var verticalScope = new GUILayout.VerticalScope())
+                        {
+                            if (GUILayout.Button("Unlock NSB achievements", noWrapButtonStyle, expandOptions))
+                            {
+                                AHUnlockAchievements("nsb");
+                            }
+                            if (GUILayout.Button("Unlock SB achievements", noWrapButtonStyle, expandOptions))
+                            {
+                                AHUnlockAchievements("sb");
+                            }
+                        }
+                        using (var verticalScope = new GUILayout.VerticalScope())
+                        {
+                            if (GUILayout.Button("Unlock all achievements", noWrapButtonStyle, expandOptions))
+                            {
+                                AHUnlockAchievements("all");
+                            }
+                            if (GUILayout.Button("Reset achievements", noWrapButtonStyle, expandOptions))
+                            {
+                                AHResetAchievements();
+                            }
+                        }
+                    }
+                    GUILayout.Label(((Achievement)achIndex - 1).ToString(), noWrapLabelStyle, expandOptions);
+                    using (var horizontalScope = new GUILayout.HorizontalScope())
+                    {
+                        if (GUILayout.Button("<<", noWrapButtonStyle))
+                        {
+                            achIndex = 1;
+                            mainWindowRect.width = mainWindowRect.height = 0;
+                        }
+                        if (GUILayout.Button("-10", noWrapButtonStyle))
+                        {
+                            if (achIndex >= 11)
+                            {
+                                achIndex -= 10;
+                            }
+                            else
+                            {
+                                achIndex = 1;
+                            }
+                            mainWindowRect.width = mainWindowRect.height = 0;
+                        }
+                        if (GUILayout.Button("-", noWrapButtonStyle))
+                        {
+                            if (achIndex >= 2)
+                            {
+                                achIndex -= 1;
+                                mainWindowRect.width = mainWindowRect.height = 0;
+                            }
+                        }
+                        GUILayout.Label(achIndex.ToString(), noWrapTextFieldStyle, expandOptions);
+                        if (GUILayout.Button("+", noWrapButtonStyle))
+                        {
+                            if (achIndex < achievementCount)
+                            {
+                                achIndex += 1;
+                                mainWindowRect.width = mainWindowRect.height = 0;
+                            }
+                        }
+                        if (GUILayout.Button("+10", noWrapButtonStyle))
+                        {
+                            if (achIndex < achievementCount - 9)
+                            {
+                                achIndex += 10;
+                            }
+                            else
+                            {
+                                achIndex = achievementCount;
+                            }
+                            mainWindowRect.width = mainWindowRect.height = 0;
+                        }
+                        if (GUILayout.Button(">>", noWrapButtonStyle))
+                        {
+                            achIndex = achievementCount;
+                            mainWindowRect.width = mainWindowRect.height = 0;
+                        }
+                        if (GUILayout.Button("Unlock this Achievement", noWrapButtonStyle, expandOptions))
+                        {
+                            AHUnlockAchievements(achIndex.ToString());
+                        }
+                    }
+                    showStatus = GUILayout.Toggle(showStatus, "Show status", noWrapToggleStyle, expandOptions);
+                    if (oldShowStatus != showStatus)
+                    {
+                        mainWindowRect.width = mainWindowRect.height = 0;
+                        oldShowStatus = showStatus;
+                    }
+                    if (showStatus)
+                    {
+                        using (var horizontalScope = new GUILayout.HorizontalScope())
+                        {
+                            using (var verticalScope = new GUILayout.VerticalScope())
+                                for (int i = 0; i < statusStrings.Length; i++)
+                                {
+                                    statusShowing[i] = GUILayout.Toggle(statusShowing[i], statusStrings[i], noWrapToggleStyle, expandOptions);
+                                }
+                            using (var verticalScope = new GUILayout.VerticalScope())
+                            {
+                                {
+                                    bool tempFlag;
+                                    string tempStr;
+                                    for (int i = 0; i < statusStrings.Length; i++)
+                                    {
+                                        using (var horizontalScope1 = new GUILayout.HorizontalScope())
+                                        {
+                                            if (i < statusStrings.Length - 1)
+                                            {
+                                                if (GUILayout.Button("↓", expandOptions))
+                                                {
+                                                    tempFlag = statusShowing[i];
+                                                    tempStr = statusStrings[i];
+                                                    statusShowing[i] = statusShowing[i + 1];
+                                                    statusStrings[i] = statusStrings[i + 1];
+                                                    statusShowing[i + 1] = tempFlag;
+                                                    statusStrings[i + 1] = tempStr;
+                                                }
+                                            }
+                                            if (i > 0)
+                                            {
+                                                if (GUILayout.Button("↑", expandOptions))
+                                                {
+                                                    tempFlag = statusShowing[i];
+                                                    tempStr = statusStrings[i];
+                                                    statusShowing[i] = statusShowing[i - 1];
+                                                    statusStrings[i] = statusStrings[i - 1];
+                                                    statusShowing[i - 1] = tempFlag;
+                                                    statusStrings[i - 1] = tempStr;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        using (var horizontalScope = new GUILayout.HorizontalScope())
+                        {
+                            if (GUILayout.Button("<<", noWrapButtonStyle))
+                            {
+                                ahStatusSize = 1;
+                                mainWindowRect.width = mainWindowRect.height = 0;
+                                doUpdteAhStatusStyle = true;
+                            }
+                            if (GUILayout.Button("-10", noWrapButtonStyle))
+                            {
+                                if (ahStatusSize > 11)
+                                {
+                                    ahStatusSize -= 10;
+                                }
+                                else
+                                {
+                                    ahStatusSize = 1;
+                                }
+                                mainWindowRect.width = mainWindowRect.height = 0;
+                                doUpdteAhStatusStyle = true;
+                            }
+                            if (GUILayout.Button("-", noWrapButtonStyle))
+                            {
+                                if (ahStatusSize > 1)
+                                {
+                                    ahStatusSize -= 1;
+                                    mainWindowRect.width = mainWindowRect.height = 0;
+                                }
+                                doUpdteAhStatusStyle = true;
+                            }
+                            GUILayout.Label(ahStatusSize.ToString(), noWrapTextFieldStyle, expandOptions);
+                            if (GUILayout.Button("+", noWrapButtonStyle))
+                            {
+                                ahStatusSize += 1;
+                                mainWindowRect.width = mainWindowRect.height = 0;
+                                doUpdteAhStatusStyle = true;
+                            }
+                            if (GUILayout.Button("+10", noWrapButtonStyle))
+                            {
+                                ahStatusSize += 10;
+                                mainWindowRect.width = mainWindowRect.height = 0;
+                                doUpdteAhStatusStyle = true;
+                            }
+                        }
+                        using (var horizontalScope = new GUILayout.HorizontalScope())
+                        {
+                            using (var verticalScope = new GUILayout.VerticalScope())
+                            {
+                                if (GUILayout.Button("R-10", noWrapButtonStyle))
+                                {
+                                    if ((ahStatusColorInt & 0xFF0000) >= 0x0A0000)
+                                    {
+                                        ahStatusColorInt -= 0x0A0000;
+                                    }
+                                    else
+                                    {
+                                        ahStatusColorInt &= 0x00FFFF;
+                                    }
+                                    mainWindowRect.width = mainWindowRect.height = 0;
+                                    doUpdteAhStatusStyle = true;
+                                }
+                                if (GUILayout.Button("G-10", noWrapButtonStyle))
+                                {
+                                    if ((ahStatusColorInt & 0x00FF00) >= 0x000A00)
+                                    {
+                                        ahStatusColorInt -= 0x000A00;
+                                    }
+                                    else
+                                    {
+                                        ahStatusColorInt &= 0xFF00FF;
+                                    }
+                                    mainWindowRect.width = mainWindowRect.height = 0;
+                                    doUpdteAhStatusStyle = true;
+                                }
+                                if (GUILayout.Button("B-10", noWrapButtonStyle))
+                                {
+                                    if ((ahStatusColorInt & 0x0000FF) >= 0x00000A)
+                                    {
+                                        ahStatusColorInt -= 0x00000A;
+                                    }
+                                    else
+                                    {
+                                        ahStatusColorInt &= 0xFFFF00;
+                                    }
+                                    mainWindowRect.width = mainWindowRect.height = 0;
+                                    doUpdteAhStatusStyle = true;
+                                }
+                            }
+                            using (var verticalScope = new GUILayout.VerticalScope())
+                            {
+                                if (GUILayout.Button("R-", noWrapButtonStyle))
+                                {
+                                    if ((ahStatusColorInt & 0xFF0000) >= 0x010000)
+                                    {
+                                        ahStatusColorInt -= 0x010000;
+                                        mainWindowRect.width = mainWindowRect.height = 0;
+                                    }
+                                    doUpdteAhStatusStyle = true;
+                                }
+                                if (GUILayout.Button("G-", noWrapButtonStyle))
+                                {
+                                    if ((ahStatusColorInt & 0x00FF00) >= 0x000100)
+                                    {
+                                        ahStatusColorInt -= 0x000100;
+                                        mainWindowRect.width = mainWindowRect.height = 0;
+                                    }
+                                    doUpdteAhStatusStyle = true;
+                                }
+                                if (GUILayout.Button("B-", noWrapButtonStyle))
+                                {
+                                    if ((ahStatusColorInt & 0x0000FF) >= 0x000001)
+                                    {
+                                        ahStatusColorInt -= 0x000001;
+                                        mainWindowRect.width = mainWindowRect.height = 0;
+                                    }
+                                    doUpdteAhStatusStyle = true;
+                                }
+                            }
+                            GUILayout.Label(ahStatusColorInt.ToString("X6"), noWrapTextFieldStyle, expandOptions);
+                            using (var verticalScope = new GUILayout.VerticalScope())
+                            {
+                                if (GUILayout.Button("R+", noWrapButtonStyle))
+                                {
+                                    if (ahStatusColorInt <= 0xFE0000)
+                                    {
+                                        ahStatusColorInt += 0x010000;
+                                        mainWindowRect.width = mainWindowRect.height = 0;
+                                    }
+                                    doUpdteAhStatusStyle = true;
+                                }
+                                if (GUILayout.Button("G+", noWrapButtonStyle))
+                                {
+                                    if (ahStatusColorInt <= 0x00FE00)
+                                    {
+                                        ahStatusColorInt += 0x000100;
+                                        mainWindowRect.width = mainWindowRect.height = 0;
+                                    }
+                                    doUpdteAhStatusStyle = true;
+                                }
+                                if (GUILayout.Button("B+", noWrapButtonStyle))
+                                {
+                                    if (ahStatusColorInt <= 0x0000FE)
+                                    {
+                                        ahStatusColorInt += 0x000001;
+                                        mainWindowRect.width = mainWindowRect.height = 0;
+                                    }
+                                    doUpdteAhStatusStyle = true;
+                                }
+                            }
+                            using (var verticalScope = new GUILayout.VerticalScope())
+                            {
+                                if (GUILayout.Button("R+10", noWrapButtonStyle))
+                                {
+                                    if ((ahStatusColorInt & 0xFF0000) <= 0xF50000)
+                                    {
+                                        ahStatusColorInt += 0x0A0000;
+                                    }
+                                    else
+                                    {
+                                        ahStatusColorInt |= 0xFF0000;
+                                    }
+                                    mainWindowRect.width = mainWindowRect.height = 0;
+                                    doUpdteAhStatusStyle = true;
+                                }
+                                if (GUILayout.Button("G+10", noWrapButtonStyle))
+                                {
+                                    if ((ahStatusColorInt & 0x00FF00) <= 0x00F500)
+                                    {
+                                        ahStatusColorInt += 0x000A00;
+                                    }
+                                    else
+                                    {
+                                        ahStatusColorInt |= 0x00FF00;
+                                    }
+                                    mainWindowRect.width = mainWindowRect.height = 0;
+                                    doUpdteAhStatusStyle = true;
+                                }
+                                if (GUILayout.Button("B+10", noWrapButtonStyle))
+                                {
+                                    if ((ahStatusColorInt & 0x0000FF) <= 0x0000F5)
+                                    {
+                                        ahStatusColorInt += 0x00000A;
+                                    }
+                                    else
+                                    {
+                                        ahStatusColorInt |= 0x0000FF;
+                                    }
+                                    mainWindowRect.width = mainWindowRect.height = 0;
+                                    doUpdteAhStatusStyle = true;
+                                }
+                            }
+                        }
 
+                        using (var horizontalScope = new GUILayout.HorizontalScope())
+                        {
+                            using (var verticalScope = new GUILayout.VerticalScope())
+                            {
+                                GUILayout.Label("X", noWrapLabelStyle, expandOptions);
+                                GUILayout.Label("Y", noWrapLabelStyle, expandOptions);
+                            }
+                            using (var verticalScope = new GUILayout.VerticalScope())
+                            {
+                                ahStatusX = GUILayout.HorizontalSlider(ahStatusX, 0, Screen.width, expandOptions);
+                                ahStatusY = GUILayout.HorizontalSlider(ahStatusY, 0, Screen.height, expandOptions);
+                            }
+                            using (var verticalScope = new GUILayout.VerticalScope())
+                            {
+                                GUILayout.Label(ahStatusX.ToString(), noWrapLabelStyle, expandOptions);
+                                GUILayout.Label(ahStatusY.ToString(), noWrapLabelStyle, expandOptions);
+                            }
+                        }
+                        using (var horizontalScope = new GUILayout.HorizontalScope())
+                        {
+                            if (GUILayout.Button(string.Format("Anchor: {0}", statusAlign[statusAlignIndex]), noWrapButtonStyle, expandOptions))
+                            {
+                                statusAlignIndex = (statusAlignIndex + 1) % 4;
+                                doUpdteAhStatusStyle = true;
+                            }
+                        }
+                    }
+                    break;
+                }
+            default:
+                {
+                    return;
+                }
+        }
+        GUI.DragWindow();
+    }
+    private static StringBuilder ahStatus = new StringBuilder();
+    private static int statusAlignIndex;
+    private static string[] statusAlign = { "TopLeft", "TopRight", "BottomLeft", "BottomRight" };
+    void OnGUI()
+    {
+        if (expandOptions == null)
+        {
+            expandOptions =
+            [
+                GUILayout.ExpandWidth(true),
+                GUILayout.ExpandHeight(true),
+                GUILayout.MaxWidth(Screen.width)
+            ];
+            noWrapLabelStyle = new GUIStyle(GUI.skin.label)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                wordWrap = false
+            };
+            noWrapTextFieldStyle = new GUIStyle(GUI.skin.textField)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                wordWrap = false
+            };
+            noWrapButtonStyle = new GUIStyle(GUI.skin.button)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                wordWrap = false
+            };
+            noWrapToggleStyle = new GUIStyle(GUI.skin.toggle)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                wordWrap = false
+            };
+            ahStatusStyle = new GUIStyle()
+            {
+                fontSize = ahStatusSize,
+                normal =
+                {
+                    textColor = ahStatusColor
+                }
+            };
+            doUpdteAhStatusStyle = true;
+        }
+        if (guiOpened)
+        {
+            mainWindowRect = GUILayout.Window(1399186700, mainWindowRect, WindowFunction, "Achievement Helper", expandOptions);
+        }
+        if (showStatus)
+        {
+            switch (statusAlignIndex)
+            {
+                case 0:
+                    {
+                        GUI.Label(new Rect(ahStatusX, ahStatusY, Screen.width, Screen.height), ahStatus.ToString(), ahStatusStyle);
+                        break;
+                    }
+                case 1:
+                    {
+                        GUI.Label(new Rect(Screen.width - ahStatusStyle.CalcSize(new GUIContent(ahStatus.ToString())).x - ahStatusX, ahStatusY, Screen.width, Screen.height), ahStatus.ToString(), ahStatusStyle);
+                        break;
+                    }
+                case 2:
+                    {
+                        GUI.Label(new Rect(ahStatusX, Screen.height - ahStatusStyle.CalcSize(new GUIContent(ahStatus.ToString())).y - ahStatusY, Screen.width, Screen.height), ahStatus.ToString(), ahStatusStyle);
+                        break;
+                    }
+                case 3:
+                    {
+                        GUI.Label(new Rect(Screen.width - ahStatusStyle.CalcSize(new GUIContent(ahStatus.ToString())).x - ahStatusX, Screen.height - ahStatusStyle.CalcSize(new GUIContent(ahStatus.ToString())).y - ahStatusY, Screen.width, Screen.height), ahStatus.ToString(), ahStatusStyle);
+                        break;
+                    }
+            }
+        }
+    }
     [HarmonyPatch(typeof(StatsAndAchievements), "Save")]
     static class SaveDetector
     {
@@ -457,7 +928,6 @@ public class Main : BaseUnityPlugin
             showSaved = 1f;
         }
     }
-
     [HarmonyPatch(typeof(StatsAndAchievements), "OnAchievementStored")]
     static class UnlockDetector
     {
@@ -469,7 +939,7 @@ public class Main : BaseUnityPlugin
                 if (pCallback.m_nMaxProgress == 0)
                 {
                     unlocked++;
-                    unlockedNsb = GetNSB();
+                    unlockedNsb = GetNSB(StatsAndAchievements.unlocked);
                     unlockedSb = unlocked - unlockedNsb;
                     lastUnlocked = SteamAchievementMap.achievementMap[pCallback.m_rgchAchievementName];
                     if (lastUnlocked <= Achievement.ACH_SINGLE_RUN || lastUnlocked >= Achievement.ACH_INTRO_STATUE_HEAD || lastUnlocked == Achievement.ACH_FALL_1)
@@ -480,12 +950,10 @@ public class Main : BaseUnityPlugin
                     {
                         lastUnlockedSb = lastUnlocked;
                     }
-                    return;
                 }
             }
         }
     }
-
     [HarmonyPatch(typeof(CheatCodes), "SteamReset")]
     static class ResetDetector
     {
@@ -494,6 +962,8 @@ public class Main : BaseUnityPlugin
         {
             unlocked = unlockedNsb = unlockedSinceStartup = 0;
             lastUnlocked = lastUnlockedNsb = lastUnlockedSb = null;
+            travelDelta = climbDelta = carryDelta = shipDelta = driveDelta = dumpsterDelta = 0;
+            fallDelta = 0;
         }
     }
 }

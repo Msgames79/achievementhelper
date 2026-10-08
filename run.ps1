@@ -5,7 +5,7 @@ if ($?) {
     $ErrorActionPreference = 'Continue'
     if (Get-ItemPropertyValue "HKCU:\Software\Valve\Steam\Apps\477160" "Running") {
         "Waiting HFF to Close"
-        Stop-Process -Name "Human", "dnSpy"
+        Stop-Process -Name "Human", "dnSpy" -ErrorAction SilentlyContinue
         while (Get-ItemPropertyValue "HKCU:\Software\Valve\Steam\Apps\477160" "Running") {
             Start-Sleep -Seconds 1
         }
