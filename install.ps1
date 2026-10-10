@@ -110,11 +110,18 @@ if ($PSVersionTable.PSVersion.Major -eq 5 -or $IsWindows) {
     $latestApi = Invoke-WebRequest "https://api.github.com/repos/Msgames79/achievementhelper/releases/latest"
     $ProgressPreference = 'Continue'
     if ([Math]::Truncate($latestApi.StatusCode / 100) -eq 2) {
-        $latestJson = $latestData.Content | ConvertFrom-Json
+        $latestJson = $latestApi.Content | ConvertFrom-Json
         $latestTagName = $latestJson.tag_name
         $latestFileApi = Invoke-WebRequest "https://github.com/Msgames79/achievementhelper/releases/download/${latestTagName}/AchievementHelper-${latestTagName}.dll"
         if ([Math]::Truncate($latestFileApi.StatusCode / 100) -eq 2) {
-            $latestFileApi.Content | Out-File (Join-Path "BepInEx" "plugins" "AchievementHelper-${latestTagName}.dll")
+            if (Test-Path (Join-Path "BepInEx" "plugins" "AchievementHelper-${latestTagName}.dll")) {
+                if ("SHA256:" + (Get-FileHash (Join-Path "BepInEx" "plugins" "AchievementHelper-${latestTagName}.dll") -Algorithm SHA256).Hash -eq $latestJson.assets.digest.ToUpper())
+                {
+                    Write-Host "Achievement Helper is up to date"
+                    exit 0
+                }
+            }
+            [System.IO.File]::WriteAllBytes((Join-Path $hffpath "BepInEx" "plugins" "AchievementHelper-${latestTagName}.dll"), $latestFileApi.Content)
             Write-Host "Operation completed successfully."
             exit 0
         }
