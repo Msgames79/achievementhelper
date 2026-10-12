@@ -27,32 +27,32 @@ ah <commands> [<option>]
 ```
 (`option`はコマンド次第でありません)
 ### `commands`一覧(1行目はフルネームによる記述、2行目はエイリアスを使用した最短記法)
+実績を解除するコマンド
 ```
 achievementhelper unlock [<option>]
 ```
 ```
 ah u [<option>]
 ```
-実績を解除するコマンド
 `<option>`について
 - 引数なし または `all`: 全て解除
 - `nsb`: NSBのみ解除
 - `sb`: SBのみ解除
 - `<index>`: `index`番目の実績を解除(1始まり)
+解除した実績を全てリセットするコマンド
 ```
 achievementhelper reset
 ```
 ```
 ah r
 ```
-解除した実績を全てリセットするコマンド
+Statsなどの表示/非表示を切り替え(**Stats**だけではないので**status**になっています)
 ```
 achievementhelper showstatus
 ```
 ```
 ah ss
 ```
-Statsなどの表示/非表示を切り替え(**Stats**だけではないので**status**になっています)
 
 
 ## インストール
@@ -102,3 +102,7 @@ Invoke-RestMethod -Uri "https://raw.githubusercontent.com/Msgames79/achievementh
 - アンカー付きのテキスト移動も可能
 - コマンド構文の変更(`ah`を中心にコマンド展開)
 - Stats系の実績をStatsを直接書き換えして解除
+
+### 1.4.0
+- 文字色にAlpha(不透明度)を追加
+- Status並び替え機能を追加

@@ -84,10 +84,10 @@ if ($PSVersionTable.PSVersion.Major -eq 5 -or $IsWindows) {
     }
     $flag = $true
     for ($i = 0; $i -lt ($vdfPSObject.libraryfolders | Get-Member -membertype noteproperty).Count; $i++) {
-    if ($vdfPSObject.libraryfolders."${i}".apps."477160") {
-        $hffpath = Join-Path ([Regex]::Replace(($vdfPSObject.libraryfolders."$i".path), "\\\\", "\")) "steamapps" "common" "Human Fall Flat"
-        $flag = $false
-        break
+        if ($vdfPSObject.libraryfolders."${i}".apps."477160") {
+            $hffpath = [System.IO.Path]::GetFullPath((Join-Path ([Regex]::Replace(($vdfPSObject.libraryfolders."$i".path), "\\\\", "\")) "steamapps" "common" "Human Fall Flat"))
+            $flag = $false
+            break
         }
     }
     if ($flag) {
@@ -107,16 +107,15 @@ if ($PSVersionTable.PSVersion.Major -eq 5 -or $IsWindows) {
         Stop-Process -Name "Human"
     }
     $ProgressPreference = 'SilentlyContinue'
-    $latestApi = Invoke-WebRequest "https://api.github.com/repos/Msgames79/achievementhelper/releases/latest"
+    $latestApi = Invoke-WebRequest "https://api.github.com/repos/Msgames79/achievementhelper/releases/latest" -UseBasicParsing
     $ProgressPreference = 'Continue'
     if ([Math]::Truncate($latestApi.StatusCode / 100) -eq 2) {
         $latestJson = $latestApi.Content | ConvertFrom-Json
         $latestTagName = $latestJson.tag_name
-        $latestFileApi = Invoke-WebRequest "https://github.com/Msgames79/achievementhelper/releases/download/${latestTagName}/AchievementHelper-${latestTagName}.dll"
+        $latestFileApi = Invoke-WebRequest "https://github.com/Msgames79/achievementhelper/releases/download/${latestTagName}/AchievementHelper-${latestTagName}.dll" -UseBasicParsing
         if ([Math]::Truncate($latestFileApi.StatusCode / 100) -eq 2) {
             if (Test-Path (Join-Path "BepInEx" "plugins" "AchievementHelper-${latestTagName}.dll")) {
-                if ("SHA256:" + (Get-FileHash (Join-Path "BepInEx" "plugins" "AchievementHelper-${latestTagName}.dll") -Algorithm SHA256).Hash -eq $latestJson.assets.digest.ToUpper())
-                {
+                if ("SHA256:" + (Get-FileHash (Join-Path "BepInEx" "plugins" "AchievementHelper-${latestTagName}.dll") -Algorithm SHA256).Hash -eq $latestJson.assets.digest.ToUpper()) {
                     Write-Host "Achievement Helper is up to date"
                     exit 0
                 }

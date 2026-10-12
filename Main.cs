@@ -18,7 +18,9 @@ using System.Configuration;
 using System.Collections;
 using Mono.Security.X509.Extensions;
 using System.Xml.Linq;
+using ProBuilder2.Common;
 namespace AchievementHelper;
+
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public class Main : BaseUnityPlugin
 {
@@ -237,14 +239,14 @@ public class Main : BaseUnityPlugin
     private static GUIStyle ahStatusStyle;
     private static int ahStatusSize = 20;
     private static Color ahStatusColor;
-    private static int ahStatusColorInt = 0xFF00FF;
+    private static uint ahStatusColorInt = 0xFF00FFFF;
     private static bool doUpdteAhStatusStyle;
     private static bool firstUpdate = true;
     void Start()
     {
         Shell.RegisterCommand("achievementhelper", new Action<string>(ShellFunction), null);
         Shell.RegisterCommand("ah", new Action<string>(ShellFunction), null);
-        mainWindowRect = new Rect(720f, 60f, 0f, 0f);
+        mainWindowRect = new Rect(710f, 60f, 0f, 0f);
         instance = this;
         Harmony harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
         harmony.PatchAll();
@@ -289,9 +291,6 @@ public class Main : BaseUnityPlugin
             if (showSaved > 0f)
             {
                 showSaved -= Time.unscaledDeltaTime;
-                if (showSaved <= 0f)
-                {
-                }
             }
             if (doUpdteAhStatusStyle)
             {
@@ -346,7 +345,7 @@ public class Main : BaseUnityPlugin
             if (showStatus)
             {
                 ahStatus.Clear();
-                for (int i = 0; i < statusStrings.Length; i++)
+                for (int i = 0; i < statusStrings.Count; i++)
                 {
                     if (statusShowing[i])
                     {
@@ -470,8 +469,9 @@ public class Main : BaseUnityPlugin
     private static GUIStyle noWrapTextFieldStyle;
     private static GUIStyle noWrapButtonStyle;
     private static GUIStyle noWrapToggleStyle;
-    private static string[] statusStrings = { "TravelM", "Fall", "Jump", "ClimbM", "CarryM", "Drown", "ShipM", "DriveM", "DumpsterM", "UnlockedCount", "UnlockedCountNSB", "UnlockedCountSB", "LastUnlocked", "LastUnlockedNSB", "LastUnlockedSB", "IsSingleRun", "SavedTiming" };
-    private static BitArray statusShowing = new BitArray(statusStrings.Length, true);
+    private static List<string> defaultStatusStrings = ["TravelM", "Fall", "Jump", "ClimbM", "CarryM", "Drown", "ShipM", "DriveM", "DumpsterM", "UnlockedCount", "UnlockedCountNSB", "UnlockedCountSB", "LastUnlocked", "LastUnlockedNSB", "LastUnlockedSB", "IsSingleRun", "SavedTiming"];
+    private static List<string> statusStrings = ["TravelM", "Fall", "Jump", "ClimbM", "CarryM", "Drown", "ShipM", "DriveM", "DumpsterM", "UnlockedCount", "UnlockedCountNSB", "UnlockedCountSB", "LastUnlocked", "LastUnlockedNSB", "LastUnlockedSB", "IsSingleRun", "SavedTiming"];
+    private static BitArray statusShowing = new BitArray(statusStrings.Count, true);
     private static float ahStatusX, ahStatusY;
     void WindowFunction(int windowId)
     {
@@ -573,8 +573,65 @@ public class Main : BaseUnityPlugin
                     {
                         using (var horizontalScope = new GUILayout.HorizontalScope())
                         {
+                            if (GUILayout.Button("Check all", noWrapButtonStyle, expandOptions))
+                            {
+                                statusShowing.SetAll(true);
+                            }
+                            if (GUILayout.Button("Uncheck all", noWrapButtonStyle, expandOptions))
+                            {
+                                statusShowing.SetAll(false);
+                            }
+                            if (GUILayout.Button("Reset order", noWrapButtonStyle, expandOptions))
+                            {
+                                BitArray bitArray = new BitArray(statusStrings.Count, false);
+                                for (int i = 0; i < statusStrings.Count; i++)
+                                {
+                                    bool flag = true;
+                                    for (int j = 0; j < statusStrings.Count; j++)
+                                    {
+                                        if (defaultStatusStrings[i] == statusStrings[j])
+                                        {
+                                            bitArray[i] = statusShowing[j];
+                                            flag = false;
+                                        }
+                                    }
+                                    if (flag)
+                                    {
+                                        throw new Exception("Something went wrong with statusStrings.");
+                                    }
+                                }
+                                statusStrings = [.. defaultStatusStrings];
+                                for (int i = 0; i < statusStrings.Count; i++)
+                                {
+                                    statusShowing[i] = bitArray[i];
+                                }
+                            }
+                            if (GUILayout.Button("Shuffle order", noWrapButtonStyle, expandOptions))
+                            {
+                                List<string> beforeShuffle = [.. statusStrings];
+                                BitArray bitArray = new BitArray(statusStrings.Count, false);
+                                EnumerableExtensions.Shuffle(statusStrings);
+                                for (int i = 0; i < statusStrings.Count; i++)
+                                {
+                                    for (int j = 0; j < statusStrings.Count; j++)
+                                    {
+                                        if (statusStrings[i] == beforeShuffle[j])
+                                        {
+                                            bitArray[i] = statusShowing[j];
+                                            break;
+                                        }
+                                    }
+                                }
+                                for (int i = 0; i < statusStrings.Count; i++)
+                                {
+                                    statusShowing[i] = bitArray[i];
+                                }
+                            }
+                        }
+                        using (var horizontalScope = new GUILayout.HorizontalScope())
+                        {
                             using (var verticalScope = new GUILayout.VerticalScope())
-                                for (int i = 0; i < statusStrings.Length; i++)
+                                for (int i = 0; i < statusStrings.Count; i++)
                                 {
                                     statusShowing[i] = GUILayout.Toggle(statusShowing[i], statusStrings[i], noWrapToggleStyle, expandOptions);
                                 }
@@ -583,11 +640,11 @@ public class Main : BaseUnityPlugin
                                 {
                                     bool tempFlag;
                                     string tempStr;
-                                    for (int i = 0; i < statusStrings.Length; i++)
+                                    for (int i = 0; i < statusStrings.Count; i++)
                                     {
                                         using (var horizontalScope1 = new GUILayout.HorizontalScope())
                                         {
-                                            if (i < statusStrings.Length - 1)
+                                            if (i < statusStrings.Count - 1)
                                             {
                                                 if (GUILayout.Button("↓", expandOptions))
                                                 {
@@ -664,41 +721,81 @@ public class Main : BaseUnityPlugin
                         {
                             using (var verticalScope = new GUILayout.VerticalScope())
                             {
+                                if (GUILayout.Button("R0", noWrapButtonStyle))
+                                {
+                                    ahStatusColorInt &= 0x00FFFFFF;
+                                    mainWindowRect.width = mainWindowRect.height = 0;
+                                    doUpdteAhStatusStyle = true;
+                                }
+                                if (GUILayout.Button("G0", noWrapButtonStyle))
+                                {
+                                    ahStatusColorInt &= 0xFF00FFFF;
+                                    mainWindowRect.width = mainWindowRect.height = 0;
+                                    doUpdteAhStatusStyle = true;
+                                }
+                                if (GUILayout.Button("B0", noWrapButtonStyle))
+                                {
+                                    ahStatusColorInt &= 0xFFFF00FF;
+                                    mainWindowRect.width = mainWindowRect.height = 0;
+                                    doUpdteAhStatusStyle = true;
+                                }
+                                if (GUILayout.Button("A0", noWrapButtonStyle))
+                                {
+                                    ahStatusColorInt &= 0xFFFFFF00;
+                                    mainWindowRect.width = mainWindowRect.height = 0;
+                                    doUpdteAhStatusStyle = true;
+                                }
+                            }
+                            using (var verticalScope = new GUILayout.VerticalScope())
+                            {
                                 if (GUILayout.Button("R-10", noWrapButtonStyle))
                                 {
-                                    if ((ahStatusColorInt & 0xFF0000) >= 0x0A0000)
+                                    if ((ahStatusColorInt & 0xFF000000) >= 0x0A000000)
                                     {
-                                        ahStatusColorInt -= 0x0A0000;
+                                        ahStatusColorInt -= 0x0A000000;
                                     }
                                     else
                                     {
-                                        ahStatusColorInt &= 0x00FFFF;
+                                        ahStatusColorInt &= 0x00FFFFFF;
                                     }
                                     mainWindowRect.width = mainWindowRect.height = 0;
                                     doUpdteAhStatusStyle = true;
                                 }
                                 if (GUILayout.Button("G-10", noWrapButtonStyle))
                                 {
-                                    if ((ahStatusColorInt & 0x00FF00) >= 0x000A00)
+                                    if ((ahStatusColorInt & 0x00FF0000) >= 0x000A0000)
                                     {
-                                        ahStatusColorInt -= 0x000A00;
+                                        ahStatusColorInt -= 0x000A0000;
                                     }
                                     else
                                     {
-                                        ahStatusColorInt &= 0xFF00FF;
+                                        ahStatusColorInt &= 0xFF00FFFF;
                                     }
                                     mainWindowRect.width = mainWindowRect.height = 0;
                                     doUpdteAhStatusStyle = true;
                                 }
                                 if (GUILayout.Button("B-10", noWrapButtonStyle))
                                 {
-                                    if ((ahStatusColorInt & 0x0000FF) >= 0x00000A)
+                                    if ((ahStatusColorInt & 0x0000FF00) >= 0x00000A00)
                                     {
-                                        ahStatusColorInt -= 0x00000A;
+                                        ahStatusColorInt -= 0x00000A00;
                                     }
                                     else
                                     {
-                                        ahStatusColorInt &= 0xFFFF00;
+                                        ahStatusColorInt &= 0xFFFF00FF;
+                                    }
+                                    mainWindowRect.width = mainWindowRect.height = 0;
+                                    doUpdteAhStatusStyle = true;
+                                }
+                                if (GUILayout.Button("A-10", noWrapButtonStyle))
+                                {
+                                    if ((ahStatusColorInt & 0x000000FF) >= 0x0000000A)
+                                    {
+                                        ahStatusColorInt -= 0x0000000A;
+                                    }
+                                    else
+                                    {
+                                        ahStatusColorInt &= 0xFFFFFF00;
                                     }
                                     mainWindowRect.width = mainWindowRect.height = 0;
                                     doUpdteAhStatusStyle = true;
@@ -708,58 +805,76 @@ public class Main : BaseUnityPlugin
                             {
                                 if (GUILayout.Button("R-", noWrapButtonStyle))
                                 {
-                                    if ((ahStatusColorInt & 0xFF0000) >= 0x010000)
+                                    if ((ahStatusColorInt & 0xFF000000) >= 0x01000000)
                                     {
-                                        ahStatusColorInt -= 0x010000;
+                                        ahStatusColorInt -= 0x01000000;
                                         mainWindowRect.width = mainWindowRect.height = 0;
                                     }
                                     doUpdteAhStatusStyle = true;
                                 }
                                 if (GUILayout.Button("G-", noWrapButtonStyle))
                                 {
-                                    if ((ahStatusColorInt & 0x00FF00) >= 0x000100)
+                                    if ((ahStatusColorInt & 0x00FF0000) >= 0x00010000)
                                     {
-                                        ahStatusColorInt -= 0x000100;
+                                        ahStatusColorInt -= 0x00010000;
                                         mainWindowRect.width = mainWindowRect.height = 0;
                                     }
                                     doUpdteAhStatusStyle = true;
                                 }
                                 if (GUILayout.Button("B-", noWrapButtonStyle))
                                 {
-                                    if ((ahStatusColorInt & 0x0000FF) >= 0x000001)
+                                    if ((ahStatusColorInt & 0x0000FF00) >= 0x00000100)
                                     {
-                                        ahStatusColorInt -= 0x000001;
+                                        ahStatusColorInt -= 0x00000100;
+                                        mainWindowRect.width = mainWindowRect.height = 0;
+                                    }
+                                    doUpdteAhStatusStyle = true;
+                                }
+                                if (GUILayout.Button("A-", noWrapButtonStyle))
+                                {
+                                    if ((ahStatusColorInt & 0x000000FF) >= 0x00000001)
+                                    {
+                                        ahStatusColorInt -= 0x00000001;
                                         mainWindowRect.width = mainWindowRect.height = 0;
                                     }
                                     doUpdteAhStatusStyle = true;
                                 }
                             }
-                            GUILayout.Label(ahStatusColorInt.ToString("X6"), noWrapTextFieldStyle, expandOptions);
+                            GUILayout.Label(string.Format("#{0}\n{1}\nR{2}  G{3}\nB{4}  A{5}", ahStatusColorInt.ToString("X6"), ahStatusColorInt, (ahStatusColorInt & 0xFF000000) >> 24, (ahStatusColorInt & 0x00FF0000) >> 16, (ahStatusColorInt & 0x0000FF00) >> 8, ahStatusColorInt & 0x000000FF), noWrapTextFieldStyle, expandOptions);
                             using (var verticalScope = new GUILayout.VerticalScope())
                             {
                                 if (GUILayout.Button("R+", noWrapButtonStyle))
                                 {
-                                    if (ahStatusColorInt <= 0xFE0000)
+                                    if ((ahStatusColorInt & 0xFF000000) <= 0xFE000000)
                                     {
-                                        ahStatusColorInt += 0x010000;
+                                        ahStatusColorInt += 0x01000000;
                                         mainWindowRect.width = mainWindowRect.height = 0;
                                     }
                                     doUpdteAhStatusStyle = true;
                                 }
                                 if (GUILayout.Button("G+", noWrapButtonStyle))
                                 {
-                                    if (ahStatusColorInt <= 0x00FE00)
+                                    if ((ahStatusColorInt & 0x00FF0000) <= 0x00FE0000)
                                     {
-                                        ahStatusColorInt += 0x000100;
+                                        ahStatusColorInt += 0x00010000;
                                         mainWindowRect.width = mainWindowRect.height = 0;
                                     }
                                     doUpdteAhStatusStyle = true;
                                 }
                                 if (GUILayout.Button("B+", noWrapButtonStyle))
                                 {
-                                    if (ahStatusColorInt <= 0x0000FE)
+                                    if ((ahStatusColorInt & 0x0000FF00) <= 0x0000FE00)
                                     {
-                                        ahStatusColorInt += 0x000001;
+                                        ahStatusColorInt += 0x00000100;
+                                        mainWindowRect.width = mainWindowRect.height = 0;
+                                    }
+                                    doUpdteAhStatusStyle = true;
+                                }
+                                if (GUILayout.Button("A+", noWrapButtonStyle))
+                                {
+                                    if ((ahStatusColorInt & 0x000000FF) <= 0x000000FE)
+                                    {
+                                        ahStatusColorInt += 0x00000001;
                                         mainWindowRect.width = mainWindowRect.height = 0;
                                     }
                                     doUpdteAhStatusStyle = true;
@@ -769,40 +884,80 @@ public class Main : BaseUnityPlugin
                             {
                                 if (GUILayout.Button("R+10", noWrapButtonStyle))
                                 {
-                                    if ((ahStatusColorInt & 0xFF0000) <= 0xF50000)
+                                    if ((ahStatusColorInt & 0xFF000000) <= 0xF5000000)
                                     {
-                                        ahStatusColorInt += 0x0A0000;
+                                        ahStatusColorInt += 0x0A000000;
                                     }
                                     else
                                     {
-                                        ahStatusColorInt |= 0xFF0000;
+                                        ahStatusColorInt |= 0xFF000000;
                                     }
                                     mainWindowRect.width = mainWindowRect.height = 0;
                                     doUpdteAhStatusStyle = true;
                                 }
                                 if (GUILayout.Button("G+10", noWrapButtonStyle))
                                 {
-                                    if ((ahStatusColorInt & 0x00FF00) <= 0x00F500)
+                                    if ((ahStatusColorInt & 0x00FF0000) <= 0x00F50000)
                                     {
-                                        ahStatusColorInt += 0x000A00;
+                                        ahStatusColorInt += 0x000A0000;
                                     }
                                     else
                                     {
-                                        ahStatusColorInt |= 0x00FF00;
+                                        ahStatusColorInt |= 0x00FF0000;
                                     }
                                     mainWindowRect.width = mainWindowRect.height = 0;
                                     doUpdteAhStatusStyle = true;
                                 }
                                 if (GUILayout.Button("B+10", noWrapButtonStyle))
                                 {
-                                    if ((ahStatusColorInt & 0x0000FF) <= 0x0000F5)
+                                    if ((ahStatusColorInt & 0x0000FF00) <= 0x0000F500)
                                     {
-                                        ahStatusColorInt += 0x00000A;
+                                        ahStatusColorInt += 0x00000A00;
                                     }
                                     else
                                     {
-                                        ahStatusColorInt |= 0x0000FF;
+                                        ahStatusColorInt |= 0x0000FF00;
                                     }
+                                    mainWindowRect.width = mainWindowRect.height = 0;
+                                    doUpdteAhStatusStyle = true;
+                                }
+                                if (GUILayout.Button("A+10", noWrapButtonStyle))
+                                {
+                                    if ((ahStatusColorInt & 0x000000FF) <= 0x000000F5)
+                                    {
+                                        ahStatusColorInt += 0x0000000A;
+                                    }
+                                    else
+                                    {
+                                        ahStatusColorInt |= 0x000000FF;
+                                    }
+                                    mainWindowRect.width = mainWindowRect.height = 0;
+                                    doUpdteAhStatusStyle = true;
+                                }
+                            }
+                            using (var verticalScope = new GUILayout.VerticalScope())
+                            {
+                                if (GUILayout.Button("R255", noWrapButtonStyle))
+                                {
+                                    ahStatusColorInt |= 0xFF000000;
+                                    mainWindowRect.width = mainWindowRect.height = 0;
+                                    doUpdteAhStatusStyle = true;
+                                }
+                                if (GUILayout.Button("G255", noWrapButtonStyle))
+                                {
+                                    ahStatusColorInt |= 0x00FF0000;
+                                    mainWindowRect.width = mainWindowRect.height = 0;
+                                    doUpdteAhStatusStyle = true;
+                                }
+                                if (GUILayout.Button("B255", noWrapButtonStyle))
+                                {
+                                    ahStatusColorInt |= 0x0000FF00;
+                                    mainWindowRect.width = mainWindowRect.height = 0;
+                                    doUpdteAhStatusStyle = true;
+                                }
+                                if (GUILayout.Button("A255", noWrapButtonStyle))
+                                {
+                                    ahStatusColorInt |= 0x000000FF;
                                     mainWindowRect.width = mainWindowRect.height = 0;
                                     doUpdteAhStatusStyle = true;
                                 }
@@ -818,8 +973,8 @@ public class Main : BaseUnityPlugin
                             }
                             using (var verticalScope = new GUILayout.VerticalScope())
                             {
-                                ahStatusX = GUILayout.HorizontalSlider(ahStatusX, 0, Screen.width, expandOptions);
-                                ahStatusY = GUILayout.HorizontalSlider(ahStatusY, 0, Screen.height, expandOptions);
+                                ahStatusX = Mathf.Floor(GUILayout.HorizontalSlider(ahStatusX, 0, Screen.width, expandOptions));
+                                ahStatusY = Mathf.Floor(GUILayout.HorizontalSlider(ahStatusY, 0, Screen.height, expandOptions));
                             }
                             using (var verticalScope = new GUILayout.VerticalScope())
                             {
@@ -960,10 +1115,23 @@ public class Main : BaseUnityPlugin
         [HarmonyPostfix]
         public static void OnReset()
         {
-            unlocked = unlockedNsb = unlockedSinceStartup = 0;
+            unlocked = unlockedNsb = unlockedSb = unlockedSinceStartup = 0;
             lastUnlocked = lastUnlockedNsb = lastUnlockedSb = null;
             travelDelta = climbDelta = carryDelta = shipDelta = driveDelta = dumpsterDelta = 0;
             fallDelta = 0;
+        }
+    }
+}
+
+//fast shuffling
+public static class EnumerableExtensions
+{
+    public static void Shuffle<T>(this List<T> list)
+    {
+        for (int i = list.Count - 1; i > 0; i--)
+        {
+            int j = UnityEngine.Random.Range(0, i + 1);
+            (list[i], list[j]) = (list[j], list[i]);
         }
     }
 }
