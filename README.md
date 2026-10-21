@@ -106,3 +106,8 @@ Invoke-RestMethod -Uri "https://raw.githubusercontent.com/Msgames79/achievementh
 ### 1.4.0
 - 文字色にAlpha(不透明度)を追加
 - Status並び替え機能を追加
+
+### 1.5.0
+- ウィンドウを分割
+- Status表示に影を付けられるようにした
+- 実績解除済みのStatを非表示にするオプションを追加
